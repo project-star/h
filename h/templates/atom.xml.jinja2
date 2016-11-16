@@ -23,7 +23,7 @@ render the feed to Atom XML.
     <updated>{{ entry.updated }}</updated>
     <published>{{ entry.published }}</published>
     <author>
-      <name>{{ entry.author.name }}</name>
+      <name>{{ entry.author.name }} </name>
     </author>
     {% for link in entry.links %}
     <link rel="{{ link.rel }}"{% if link.type %} type="{{ link.type }}"{% endif %} href="{{ link.href }}" />

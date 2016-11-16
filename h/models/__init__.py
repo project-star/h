@@ -30,6 +30,7 @@ from h.models.feature_cohort import FeatureCohort
 from h.models.group import Group
 from h.models.token import Token
 from h.models.user import User
+from h.models.uri import Uri
 
 __all__ = (
     'Activation',
@@ -45,6 +46,7 @@ __all__ = (
     'Subscriptions',
     'Token',
     'User',
+    'Uri',
 )
 
 

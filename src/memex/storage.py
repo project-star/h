@@ -13,6 +13,7 @@ from pyramid import i18n
 
 from memex import schemas
 from memex import models
+from h import models as hmod
 from memex.db import types
 
 
@@ -72,6 +73,31 @@ def fetch_ordered_annotations(session, ids, query_processor=None):
 
     anns = sorted(query, key=lambda a: ordering.get(a.id))
     return anns
+
+def create_uri(request, data):
+    """
+    Create an annotation from passed data.
+
+    :param request: the request object
+    :type request: pyramid.request.Request
+
+    :param data: a dictionary of annotation properties
+    :type data: dict
+
+    :returns: the created annotation
+    :rtype: dict
+    """
+
+    uri = hmod.Uri(**data)
+    request.db.add(uri)
+
+    # We need to flush the db here so that annotation.created and
+    # annotation.updated get created.
+    request.db.flush()
+
+
+    return uri
+
 
 
 def create_annotation(request, data):

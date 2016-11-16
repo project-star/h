@@ -58,7 +58,7 @@ def generate_jwt(request, expires_in):
 
     """
     now = datetime.datetime.utcnow().replace(microsecond=0)
-
+    print now
     claims = {
         'iss': request.registry.settings['h.client_id'],
         'aud': request.host_url,

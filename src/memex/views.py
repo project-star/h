@@ -155,10 +155,13 @@ def search(request):
             effective_principals=security.Authenticated)
 def create(request):
     """Create an annotation from the POST payload."""
+    urischema=schemas.CreateURI(request)
+    uriappstruct = urischema.validate(_json_payload(request))
+    uri = storage.create_uri(request, uriappstruct)
     schema = schemas.CreateAnnotationSchema(request)
     appstruct = schema.validate(_json_payload(request))
     annotation = storage.create_annotation(request, appstruct)
-
+    
     _publish_annotation_event(request, annotation, 'create')
 
     links_service = request.find_service(name='links')
