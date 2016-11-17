@@ -87,9 +87,14 @@ def create_uri(request, data):
     :returns: the created annotation
     :rtype: dict
     """
+    print data["userid"]
+    print data["uriaddress"]
+    count= request.db.query(hmod.Uri).filter(hmod.Uri.uriaddress==data["uriaddress"]).filter(hmod.Uri.userid==data["userid"]).filter(hmod.Uri.isbookmark==data["isbookmark"]).count()
+    print count
 
     uri = hmod.Uri(**data)
-    request.db.add(uri)
+    if (count < 1):
+        request.db.add(uri)
 
     # We need to flush the db here so that annotation.created and
     # annotation.updated get created.
