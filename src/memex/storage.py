@@ -39,6 +39,27 @@ def fetch_annotation(session, id_):
         return None
 
 
+
+
+def fetch_uri(session, uriaddress, userid, isbookmark):
+    """
+    Fetch the annotation with the given id.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param id_: the annotation ID
+    :type id_: str
+
+    :returns: the annotation, if found, or None.
+    :rtype: memex.models.Annotation, NoneType
+    """
+    try:
+        return session.query(hmod.Uri).filter(hmod.Uri.uriaddress==uriaddress).filter(hmod.Uri.userid==userid).filter(hmod.Uri.isbookmark==isbookmark)
+    except types.InvalidUUID:
+        return None
+
+
 def fetch_ordered_annotations(session, ids, query_processor=None):
     """
     Fetch all annotations with the given ids and order them based on the list
@@ -145,7 +166,11 @@ def create_annotation(request, data):
                                           _('You may not create annotations '
                                             'in groups you are not a member '
                                             'of!'))
-
+    print data["target_uri"] 
+    print data["userid"]
+    uri = fetch_uri(request.db, data["target_uri"], data["userid"], "False")
+    print uri[0].uriaddress
+    data["extra"]["uri_id"] = uri[0].id
     annotation = models.Annotation(**data)
     request.db.add(annotation)
 
