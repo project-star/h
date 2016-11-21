@@ -17,6 +17,10 @@ def includeme(config):
                      '/annotations/{id:[A-Za-z0-9_-]{20,22}}',
                      factory='memex.resources:AnnotationFactory',
                      traverse='/{id}')
+    config.add_route('api.url',
+                     '/url/{id:[A-Za-z0-9_-]{20,22}}',
+                     factory='memex.resources:URLFactory',
+                     traverse='/{id}')
     config.add_route('api.annotation.jsonld',
                      '/annotations/{id:[A-Za-z0-9_-]{20,22}}.jsonld',
                      factory='memex.resources:AnnotationFactory',

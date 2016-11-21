@@ -180,6 +180,16 @@ class UriFilter(object):
 
         return {"terms": {"target.scope": list(uris)}}
 
+#class UrlIdFilter(object):
+#
+#    def __call__(self, params):
+#        # Remove parameter if passed, preventing fall-through to default query
+#        uri_id = params.pop("uri_id", None)
+#        print "+++++++in urlIdfilter+++++"
+#
+#        print uri_id
+#        if uri_id is not None:
+#            return {"term": {"uri_id": uri_id}}
 
 class UserFilter(object):
 

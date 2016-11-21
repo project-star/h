@@ -12,6 +12,7 @@ from h.db import Base
 from h.security import password_context
 from h.util.user import split_user
 from memex.db import types
+from pyramid import security
 
 USERNAME_MIN_LENGTH = 3
 USERNAME_MAX_LENGTH = 30
@@ -36,8 +37,9 @@ class Uri(Base):
         sa.Index('ix__uri_tags', 'tags', postgresql_using='gin'),
     )
 
-    id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
-
+    id = sa.Column(types.URLSafeUUID,
+                   server_default=sa.func.uuid_generate_v1mc(),
+                   primary_key=True)
     #: Username as chosen by the user on registration
     uriaddress = sa.Column( sa.UnicodeText(), nullable=False)
 
@@ -62,3 +64,18 @@ class Uri(Base):
     tags = sa.Column(
         types.MutableList.as_mutable(
             pg.ARRAY(sa.UnicodeText, zero_indexes=True)))
+    def __acl__(self):
+        """Return a Pyramid ACL for this annotation."""
+        acl = []
+        acl.append((security.Allow, self.userid, 'read'))
+
+        for action in ['admin', 'update', 'delete']:
+            acl.append((security.Allow, self.userid, action))
+
+        # If we haven't explicitly authorized it, it's not allowed.
+        acl.append(security.DENY_ALL)
+
+        return acl
+    def __repr__(self):
+        return '<Urldata %s>' % self.id
+    

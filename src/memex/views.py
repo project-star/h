@@ -20,11 +20,12 @@ from pyramid import i18n
 from pyramid import security
 from pyramid.view import view_config
 from sqlalchemy.orm import subqueryload
-
+from werkzeug.datastructures import MultiDict
 from memex import cors
 from memex import models
 from memex.events import AnnotationEvent
 from memex.presenters import AnnotationJSONPresenter
+from memex.renotedpresenters import UrlJSONPresenter
 from memex.presenters import AnnotationJSONLDPresenter
 from memex import search as search_lib
 from memex import schemas
@@ -96,6 +97,8 @@ def index(context, request):
     # ":id" as the id here.
     annotation_url = request.route_url('api.annotation', id='123')\
                             .replace('123', ':id')
+    renoted_url = request.route_url('api.url', id='123')\
+                            .replace('123', ':id')
     return {
         'message': "Annotator Store API",
         'links': {
@@ -126,6 +129,11 @@ def index(context, request):
                 'url': request.route_url('api.search'),
                 'desc': 'Basic search API'
             },
+            'url': {
+                  'method': 'GET',
+                  'url': renoted_url,
+                  'desc': "Get an existing annotation"
+            }
         }
     }
 
@@ -134,7 +142,7 @@ def index(context, request):
 def search(request):
     """Search the database for annotations matching with the given query."""
     params = request.params.copy()
-
+    print params
     separate_replies = params.pop('_separate_replies', False)
     result = search_lib.Search(request, separate_replies=separate_replies) \
         .run(params)
@@ -175,9 +183,31 @@ def create(request):
 def read(annotation, request):
     """Return the annotation (simply how it was stored in the database)."""
     links_service = request.find_service(name='links')
+    print links_service
+
     presenter = AnnotationJSONPresenter(annotation, links_service)
+    print presenter
     return presenter.asdict()
 
+@api_config(route_name='api.url',
+            request_method='GET',
+            permission='read')
+def renotedread(urldata, request):
+    """Return the annotation (simply how it was stored in the database)."""
+    params=MultiDict([(u'uri_id', urldata.id)])
+    print params
+    result = search_lib.Search(request) \
+        .run(params)
+
+    out = {
+        'total': result.total,
+        'annotations': _present_annotations(request, result.annotation_ids)
+    }
+
+    print out
+    presenter = UrlJSONPresenter(urldata,out)
+    print urldata
+    return presenter.asdict()
 
 @api_config(route_name='api.annotation.jsonld',
             request_method='GET',

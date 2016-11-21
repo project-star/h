@@ -10,7 +10,6 @@ assumed to be validated.
 from datetime import datetime
 
 from pyramid import i18n
-
 from memex import schemas
 from memex import models
 from h import models as hmod
@@ -34,10 +33,28 @@ def fetch_annotation(session, id_):
     :rtype: memex.models.Annotation, NoneType
     """
     try:
+        val = session.query(models.Annotation).get(id_)
+        print val
         return session.query(models.Annotation).get(id_)
     except types.InvalidUUID:
         return None
+def fetch_url(session, id_):
+    """
+    Fetch the annotation with the given id.
 
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param id_: the annotation ID
+    :type id_: str
+
+    :returns: the annotation, if found, or None.
+    :rtype: memex.models.Annotation, NoneType
+    """
+    print "++++++++in fetch_url function+++++   "
+    val = session.query(hmod.Uri).get(id_)
+    print val
+    return session.query(hmod.Uri).get(id_)
 
 
 

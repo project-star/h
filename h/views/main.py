@@ -47,6 +47,32 @@ def annotation_page(annotation, request):
     })
 
 
+@view_config(route_name='renotedannotation', permission='read')
+def renotedannotation_page(annotation, request):
+    document = annotation.document
+    if document and document.title:
+        title = 'Annotation by {user} on {title}'.format(
+            user=annotation.userid.replace('acct:', ''),
+            title=document.title)
+    else:
+        title = 'Annotation by {user}'.format(
+            user=annotation.userid.replace('acct:', ''))
+
+    alternate = request.route_url('api.url', id=annotation.id)
+
+    return render_app(request, {
+        'meta_attrs': (
+            {'property': 'og:title', 'content': title},
+            {'property': 'og:description', 'content': ''},
+            {'property': 'og:image', 'content': '/assets/images/logo.png'},
+            {'property': 'og:site_name', 'content': 'Hypothes.is'},
+            {'property': 'og:url', 'content': request.url},
+        ),
+        'link_attrs': (
+            {'rel': 'alternate', 'href': alternate,
+                'type': 'application/json'},
+        ),
+    })
 @view_config(route_name='robots', http_cache=(86400, {'public': True}))
 def robots(context, request):
     return response.FileResponse('h/static/robots.txt',
@@ -64,6 +90,18 @@ def stream(context, request):
             {'rel': 'alternate', 'href': rss, 'type': 'application/rss+xml'},
         ]
     })
+
+@view_config(route_name='showannotation')
+def showrenotedannotation(context, request):
+    atom = request.route_url('stream_atom')
+    rss = request.route_url('stream_rss')
+    return render_app(request, {
+        'link_tags': [
+            {'rel': 'alternate', 'href': atom, 'type': 'application/atom+xml'},
+            {'rel': 'alternate', 'href': rss, 'type': 'application/rss+xml'},
+        ]
+    })
+
 
 
 @view_config(route_name='stream.tag_query')
