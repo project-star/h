@@ -22,6 +22,9 @@ from h.util.view import json_view
 def render_app(request, extra=None):
     """Render a page that serves a preconfigured annotation client."""
     client_sentry_dsn = request.registry.settings.get('h.client.sentry_dsn')
+    print "+++++ in render app+++++"
+    print client_sentry_dsn
+    print "+++++"
     html = client.render_app_html(
         assets_env=request.registry['assets_client_env'],
         # FIXME: The '' here is to ensure this has a trailing slash. This seems

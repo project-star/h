@@ -13,7 +13,7 @@
       <h1 class="form-header">Log in</h1>
       {{ form }}
       <footer class="form-footer">
-        Don't have a Hypothesis account?
+        Don't have a Renoted account?
         <a class="link" href="{{ request.route_path('signup') }}">Sign up</a>
       </footer>
     </div>
@@ -23,7 +23,11 @@
       <div class="form-vertical">
         <ul class="nav nav-tabs">
           <li class="active"><a href="{{ request.route_path('login') }}">Log in</a></li>{#
-          #}<li><a href="{{ request.route_path('signup') }}">Create an account</a></li>
+
+          #}
+          <!--   
+          <li><a href="{{ request.route_path('signup') }}">Create an account</a></li>
+          -->
         </ul>
         {{ form }}
       </div>

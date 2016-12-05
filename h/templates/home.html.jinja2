@@ -3,7 +3,7 @@
 
 {% extends "h:templates/layouts/base.html.jinja2" %}
 
-{% block page_title %}Hypothesis | The Internet, peer reviewed.{% endblock %}
+{% block page_title %}Renoted | Your Mind Palace.{% endblock %}
 
 {% block meta %}
   {{ super() }}
@@ -73,7 +73,9 @@
             <li><a href="{{ request.route_url("logout") }}">Log out</a></li>
           {% else %}
             <li><a href="{{ base_url }}login">Log in</a></li>
+            <!--
             <li><a href="{{ base_url }}signup">Create an account</a></li>
+            -->
           {% endif %}
         </ul>
       </nav>

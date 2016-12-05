@@ -14,10 +14,10 @@ from memex import schemas
 from memex import models
 from h import models as hmod
 from memex.db import types
-
-
+from memex.events import AnnotationEvent
+from memex.presenters import AnnotationJSONPresenter
 _ = i18n.TranslationStringFactory(__package__)
-
+import time
 
 def fetch_annotation(session, id_):
     """
@@ -133,6 +133,7 @@ def create_uri(request, data):
     uri = hmod.Uri(**data)
     if (count < 1):
         request.db.add(uri)
+  
 
     # We need to flush the db here so that annotation.created and
     # annotation.updated get created.
@@ -189,17 +190,56 @@ def create_annotation(request, data):
     print uri[0].uriaddress
     data["extra"]["uri_id"] = uri[0].id
     annotation = models.Annotation(**data)
-    request.db.add(annotation)
-
+    val = request.db.query(models.Annotation).get(uri[0].id)
+    #if val is None:
+    #    print "++++adding fake annotation+++++"
+    #    fake_annotation=create_fake_annotation(request,data,document_meta_dicts, document_uri_dicts)
+    #    time.sleep(1)
+    #    print fake_annotation
+    #    print "+++++ending fake annotation++++"
     # We need to flush the db here so that annotation.created and
     # annotation.updated get created.
+    request.db.add(annotation)
     request.db.flush()
 
     models.update_document_metadata(
         request.db, annotation, document_meta_dicts, document_uri_dicts)
 
     return annotation
+def create_fake_annotation(request, data,document_meta_dicts, document_uri_dicts):
+    """
+    Create an annotation from passed data.
 
+    :param request: the request object
+    :type request: pyramid.request.Request
+
+    :param data: a dictionary of annotation properties
+    :type data: dict
+
+    :returns: the created annotation
+    :rtype: dict
+    """
+    print data["target_uri"] 
+    print data["userid"]
+    uri = fetch_uri(request.db, data["target_uri"], data["userid"], "False")
+    print uri[0].uriaddress
+    data["extra"]["uri_id"] = uri[0].id
+    data["id"]=uri[0].id
+    data['text'] = u''
+    data['tags'] = []
+    data['groupid'] = u'__world__'
+    data['target_selectors']=[]
+    annotation = models.Annotation(**data)
+    request.db.add(annotation)      
+    # We need to flush the db here so that annotation.created and
+    # annotation.updated get created.
+    request.db.flush()
+
+    models.update_document_metadata(
+        request.db, annotation, document_meta_dicts, document_uri_dicts)
+    _publish_annotation_event(request, annotation, 'create')
+    _publish_annotation_event(request, annotation, 'update')
+    return annotation
 
 def update_annotation(session, id_, data):
     """
@@ -287,3 +327,16 @@ def expand_uri(session, uri):
             return [uri]
 
     return [docuri.uri for docuri in docuris]
+
+def _publish_annotation_event(request,
+                              annotation,
+                              action):
+    """Publish an event to the annotations queue for this annotation action."""
+    links_service = request.find_service(name='links')
+    annotation_dict = None
+    if action == 'delete':
+        presenter = AnnotationJSONPresenter(annotation, links_service)
+        annotation_dict = presenter.asdict()
+
+    event = AnnotationEvent(request, annotation.id, action, annotation_dict)
+    request.notify_after_commit(event)

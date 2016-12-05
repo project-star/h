@@ -126,7 +126,7 @@ class CSRFSchema(colander.Schema):
 class LoginSchema(CSRFSchema):
     username = colander.SchemaNode(
         colander.String(),
-        title=_('Username / email123'),
+        title=_('Username'),
         widget=deform.widget.TextInputWidget(autofocus=True),
     )
     password = colander.SchemaNode(

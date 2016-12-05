@@ -29,9 +29,13 @@ def annotation_page(annotation, request):
     else:
         title = 'Annotation by {user}'.format(
             user=annotation.userid.replace('acct:', ''))
+    print "++++"
+    print title
+    print "++++"
 
     alternate = request.route_url('api.annotation', id=annotation.id)
-
+    print alternate
+    print "++++"
     return render_app(request, {
         'meta_attrs': (
             {'property': 'og:title', 'content': title},
@@ -48,18 +52,23 @@ def annotation_page(annotation, request):
 
 
 @view_config(route_name='renotedannotation', permission='read')
-def renotedannotation_page(annotation, request):
-    document = annotation.document
-    if document and document.title:
-        title = 'Annotation by {user} on {title}'.format(
-            user=annotation.userid.replace('acct:', ''),
-            title=document.title)
-    else:
-        title = 'Annotation by {user}'.format(
-            user=annotation.userid.replace('acct:', ''))
+def renotedannotation_page(urldata, request):
+    print urldata.isbookmark
+#    document = urldata.rows.annotations[0].document
+#    if document and document.title:
+#        title = 'Annotation by {user} on {title}'.format(
+#            user=urldata.userid.replace('acct:', ''),
+#            title=document.title)
+#    else:
+    title = 'Annotation by {user}'.format(
+       user=urldata.userid.replace('acct:', ''))
+    print "++++"
+    print title
+    print "++++"
 
-    alternate = request.route_url('api.url', id=annotation.id)
-
+    alternate = request.route_url('api.url', id=urldata.id)
+    print alternate
+    print "++++"
     return render_app(request, {
         'meta_attrs': (
             {'property': 'og:title', 'content': title},

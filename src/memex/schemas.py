@@ -203,7 +203,52 @@ class CreateAnnotationSchema(object):
         new_appstruct['extra'] = appstruct
 
         return new_appstruct
+class CreateFakeAnnotationSchema(object):
 
+    """Validate the POSTed data of a create annotation request."""
+
+    def __init__(self, request):
+        self.structure = AnnotationSchema()
+        self.request = request
+
+    def validate(self, data):
+        appstruct = self.structure.validate(data)
+
+        if not appstruct.get('uri', ''):
+            raise ValidationError('uri: ' + _("'uri' is a required property"))
+
+        new_appstruct = {}
+
+        _remove_protected_fields(appstruct)
+
+        new_appstruct['userid'] = self.request.authenticated_userid
+        new_appstruct['target_uri'] = appstruct.pop('uri', u'')
+        new_appstruct['text'] = u''
+        new_appstruct['tags'] = []
+        new_appstruct['groupid'] = u'__world__'
+        new_appstruct['references'] = appstruct.pop('references', [])
+
+        if 'permissions' in appstruct:
+            new_appstruct['shared'] = _shared(appstruct.pop('permissions'),
+                                              new_appstruct['groupid'])
+        else:
+            new_appstruct['shared'] = False
+
+        if 'target' in appstruct:
+            new_appstruct['target_selectors'] = []
+
+        # Replies always get the same groupid as their parent. The parent's
+        # groupid is added to the reply annotation later by the storage code.
+        # Here we just delete any group sent by the client from replies.
+        if new_appstruct['references'] and 'groupid' in new_appstruct:
+            del new_appstruct['groupid']
+
+        new_appstruct['document'] = _document(appstruct.pop('document', {}),
+                                              new_appstruct['target_uri'])
+
+        new_appstruct['extra'] = appstruct
+
+        return new_appstruct
 
 class UpdateAnnotationSchema(object):
 

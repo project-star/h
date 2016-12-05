@@ -29,8 +29,8 @@ def includeme(config):
                      factory='memex.resources:AnnotationFactory',
                      traverse='/{id}')
     config.add_route('renotedannotation',
-                     '/url/{id}',
-                     factory='memex.resources:AnnotationFactory',
+                     '/u/{id}',
+                     factory='memex.resources:URLFactory',
                      traverse='/{id}')
     config.add_route('robots', '/robots.txt')
     config.add_route('session', '/app')
