@@ -8,7 +8,7 @@ from memex import storage
 from memex.search.index import index
 from memex.search.index import delete
 from memex.search.index import reindex
-
+from memex.search.index import createfile
 __all__ = (
     'add_annotation',
     'delete_annotation',
@@ -24,7 +24,7 @@ def add_annotation(id_):
     annotation = storage.fetch_annotation(celery.request.db, id_)
     if annotation:
         index(celery.request.es, annotation, celery.request)
-
+        createfile(celery.request.es, annotation, celery.request)
 
 @celery.task
 def delete_annotation(id_):

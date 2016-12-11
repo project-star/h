@@ -6,15 +6,17 @@ from collections import namedtuple
 import itertools
 import logging
 from memex._compat import xrange
-
+import subprocess
 import elasticsearch
 from elasticsearch import helpers as es_helpers
 from sqlalchemy.orm import subqueryload
-
+import os
 from memex import models
 from memex import presenters
 from memex.events import AnnotationTransformEvent
-
+from pymongo import MongoClient
+import json
+import requests
 
 log = logging.getLogger(__name__)
 
@@ -22,6 +24,11 @@ log = logging.getLogger(__name__)
 class Window(namedtuple('Window', ['start', 'end'])):
     pass
 
+
+def get_db():
+    client = MongoClient('0.0.0.0:27017')
+    db = client.renoted
+    return db
 
 def index(es, annotation, request):
     """
@@ -43,14 +50,50 @@ def index(es, annotation, request):
 
     event = AnnotationTransformEvent(request, annotation_dict)
     request.registry.notify(event)
-
+    print "in index function in memex"
+    print (os.getcwd())
     es.conn.index(
         index=es.index,
         doc_type=es.t.annotation,
         body=annotation_dict,
         id=annotation_dict["id"],
     )
+def createfile(es, annotation, request):
+    """
+    Index an annotation into the search index.
 
+    A new annotation document will be created in the search index or,
+    if the index already contains an annotation document with the same ID as
+    the given annotation then it will be updated.
+
+    :param es: the Elasticsearch client object to use
+    :type es: memex.search.Client
+
+    :param annotation: the annotation to index
+    :type annotation: memex.models.Annotation
+
+    """
+    presenter = presenters.AnnotationSearchIndexPresenter(annotation)
+    annotation_dict = presenter.asdict()
+
+    event = AnnotationTransformEvent(request, annotation_dict)
+    print "in index function in memex"
+    print (os.getcwd())
+    filepath = "AI/" + annotation_dict['id'] + ".txt"
+    valtoWrite="Nothing"
+    print (annotation_dict)
+    if (len(annotation_dict['target']) > 0):
+        selector = annotation_dict['target'][0]['selector']
+        print (selector)
+        for item in selector:
+            if (item['type']=="TextQuoteSelector"):
+                valtoWrite=item['exact']
+    print(valtoWrite)
+    f = open(filepath,'wb')
+    f.write(valtoWrite.encode('utf-8'))
+    f.close()
+    db = get_db()
+    db.annotations.insert({"annotation_id": annotation_dict['id'], "uri_id": annotation_dict['uri_id'], "processed" : False, "initialtags":[],"addedtags":[]}) 
 
 def delete(es, annotation_id):
     """

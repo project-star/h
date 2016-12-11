@@ -133,6 +133,11 @@ def index(context, request):
                   'method': 'GET',
                   'url': renoted_url,
                   'desc': "Get an existing annotation"
+            },
+            'recall': {
+                  'method': 'POST',
+                  'url': request.route_url('api.recall'),
+                  'desc': "Get recalled annotations"
             }
         }
     }
@@ -208,6 +213,28 @@ def renotedread(urldata, request):
     presenter = UrlJSONPresenter(urldata,out)
     print urldata
     return presenter.asdict()
+
+
+@api_config(route_name='api.recall',
+            request_method='POST',
+            effective_principals=security.Authenticated)
+def renotedrecall(request):
+    """Return the annotation (simply how it was stored in the database)."""
+    params=MultiDict([(u'any', u'airtel')])
+    print params
+    print request
+    result = search_lib.Search(request) \
+        .run(params)
+
+    out = {
+        'total': result.total,
+        'annotations': _present_annotations(request, result.annotation_ids)
+    }
+
+    print out
+    #presenter = UrlJSONPresenter(urldata,out)
+    #print urldata
+    return out
 
 @api_config(route_name='api.annotation.jsonld',
             request_method='GET',

@@ -25,3 +25,17 @@ class URLFactory(object):
         if urldata is None:
             raise KeyError()
         return urldata
+
+class RECALLFactory(object):
+    def __init__(self, request):
+        self.request = request
+
+    def __getitem__(self, id):
+        print id
+        urldata = storage.fetch_url(self.request.db, id)
+        print id
+        if urldata is None:
+            raise KeyError()
+        return urldata
+
+
