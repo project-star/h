@@ -93,7 +93,7 @@ def createfile(es, annotation, request):
     f.write(valtoWrite.encode('utf-8'))
     f.close()
     db = get_db()
-    db.annotations.insert({"annotation_id": annotation_dict['id'], "uri_id": annotation_dict['uri_id'], "processed" : False, "initialtags":[],"addedtags":[]}) 
+    db.annotations.insert({"annotation_id": annotation_dict['id'], "uri_id": annotation_dict['uri_id'], "processed" : False, "initialtags":[],"addedtags":[],"uri":annotation_dict['uri'],"user":annotation_dict['user'],"topics":[]}) 
 
 def delete(es, annotation_id):
     """

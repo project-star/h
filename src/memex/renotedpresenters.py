@@ -14,10 +14,12 @@ class UrlBasePresenter(object):
         self.annotations = annotations
 
 
+
 class UrlJSONPresenter(UrlBasePresenter):
 
     """Present a url in the JSON format returned by API requests."""
     def asdict(self):
+      
         base = {
             'id': self.urldata.id,
             'uriaddress': self.urldata.uriaddress,
@@ -29,6 +31,10 @@ class UrlJSONPresenter(UrlBasePresenter):
         urldata = {}
         urldata.update(base)
         return urldata
+
+
+
+
 
 class RenotedDocumentJSONPresenter(object):
     def __init__(self, document):

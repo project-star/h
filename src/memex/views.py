@@ -30,7 +30,8 @@ from memex.presenters import AnnotationJSONLDPresenter
 from memex import search as search_lib
 from memex import schemas
 from memex import storage
-
+from pymongo import MongoClient
+import json
 _ = i18n.TranslationStringFactory(__package__)
 
 cors_policy = cors.policy(
@@ -220,9 +221,20 @@ def renotedread(urldata, request):
             effective_principals=security.Authenticated)
 def renotedrecall(request):
     """Return the annotation (simply how it was stored in the database)."""
-    params=MultiDict([(u'any', u'airtel')])
+    data=_json_payload(request)
+    print (request.authenticated_userid)
+    print data["url"]
+    query=" "
+    db=get_db()    
+    collection=db.annotations.find({"uri": data["url"],"user":request.authenticated_userid})
+    for item in collection:
+        print item["uri_id"]
+        print item["topics"]
+        print item["addedtags"]
+        for item1 in item["addedtags"]:
+            query = query + " " + item1;
+    params=MultiDict([(u'any', query)])
     print params
-    print request
     result = search_lib.Search(request) \
         .run(params)
 
@@ -327,6 +339,11 @@ def _publish_annotation_event(request,
     event = AnnotationEvent(request, annotation.id, action, annotation_dict)
     request.notify_after_commit(event)
 
+
+def get_db():
+    client = MongoClient('0.0.0.0:27017')
+    db = client.renoted
+    return db
 
 def includeme(config):
     config.scan(__name__)
