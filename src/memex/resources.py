@@ -26,6 +26,18 @@ class URLFactory(object):
             raise KeyError()
         return urldata
 
+class URLSFactory(object):
+    def __init__(self, request):
+        self.request = request
+
+    def __getitem__(self):
+        print "++ in factory++"
+        urlsdata = storage.fetch_urls(self.request.db,self.request.authenticated_userid)
+        print urlsdata
+        if urlsdata is None:
+            raise KeyError()
+        return urlsdata
+
 class RECALLFactory(object):
     def __init__(self, request):
         self.request = request

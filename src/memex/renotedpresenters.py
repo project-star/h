@@ -32,6 +32,27 @@ class UrlJSONPresenter(UrlBasePresenter):
         urldata.update(base)
         return urldata
 
+class SimpleUrlPresenter(object):
+    def __init__(self, urldata):
+        self.urldata = urldata
+
+
+
+class SimpleUrlJSONPresenter(SimpleUrlPresenter):
+
+    """Present a url in the JSON format returned by API requests."""
+    def asdict(self):
+
+        base = {
+            'id': self.urldata.id,
+            'uriaddress': self.urldata.uriaddress,
+            'user': self.urldata.userid,
+            'tags': self.urldata.tags,
+            'isbookmark': self.urldata.isbookmark
+        }
+        urldata = {}
+        urldata.update(base)
+        return urldata
 
 
 

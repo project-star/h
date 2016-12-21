@@ -56,6 +56,23 @@ def fetch_url(session, id_):
     print val
     return session.query(hmod.Uri).get(id_)
 
+def fetch_urls(session,userid):
+    """
+    Fetch the annotation with the given id.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param id_: the annotation ID
+    :type id_: str
+
+    :returns: the annotation, if found, or None.
+    :rtype: memex.models.Annotation, NoneType
+    """
+    print "++++++++in fetch_url function+++++   "
+    val = session.query(hmod.Uri).filter(hmod.Uri.userid==userid).all()
+    print val
+    return val
 
 
 def fetch_uri(session, uriaddress, userid, isbookmark):

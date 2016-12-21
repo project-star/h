@@ -26,6 +26,7 @@ from memex import models
 from memex.events import AnnotationEvent
 from memex.presenters import AnnotationJSONPresenter
 from memex.renotedpresenters import UrlJSONPresenter
+from memex.renotedpresenters import SimpleUrlJSONPresenter
 from memex.presenters import AnnotationJSONLDPresenter
 from memex import search as search_lib
 from memex import schemas
@@ -139,7 +140,12 @@ def index(context, request):
                   'method': 'POST',
                   'url': request.route_url('api.recall'),
                   'desc': "Get recalled annotations"
-            }
+            },
+            'urls': {
+                  'method': 'GET',
+                  'url': request.route_url('api.urls'),
+                  'desc': "Get all annotatated urls of a user"
+            },
         }
     }
 
@@ -182,6 +188,20 @@ def create(request):
     presenter = AnnotationJSONPresenter(annotation, links_service)
     return presenter.asdict()
 
+@api_config(route_name='api.urls',
+            request_method='GET',
+            effective_principals=security.Authenticated)
+def readannotatedurls(request):
+    """Get the list of annotated urls from the user."""
+    urlsdata = storage.fetch_urls(request.db,request.authenticated_userid)
+    urllist=[]
+    retval={}
+    for item in urlsdata:
+        urlstruct=SimpleUrlJSONPresenter(item)
+        urllist.append(urlstruct.asdict())
+    retval["total"] = len(urllist)
+    retval["urllist"] = urllist
+    return retval
 
 @api_config(route_name='api.annotation',
             request_method='GET',
@@ -219,7 +239,7 @@ def renotedread(urldata, request):
 @api_config(route_name='api.recall',
             request_method='POST',
             effective_principals=security.Authenticated)
-def renotedrecall(request):
+def renotedrecallapi(request):
     """Return the annotation (simply how it was stored in the database)."""
     data=_json_payload(request)
     print (request.authenticated_userid)
