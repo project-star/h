@@ -71,6 +71,7 @@ class AnnotationJSONPresenter(AnnotationBasePresenter):
             'target': self.target,
             'document': docpresenter.asdict(),
             'links': self.links,
+            'title': self.annotation.document.title
         }
 
         if self.annotation.references:
@@ -108,6 +109,7 @@ class AnnotationSearchIndexPresenter(AnnotationBasePresenter):
             'permissions': self.permissions,
             'target': self.target,
             'document': docpresenter.asdict(),
+            'title': self.annotation.document.title
         }
 
         base['target'][0]['scope'] = [self.annotation.target_uri_normalized]

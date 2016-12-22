@@ -27,6 +27,7 @@ ANNOTATION_MAPPING = {
         'tags': {'type': 'string', 'analyzer': 'uni_normalizer'},
         'uri_id': {'type': 'string', 'analyzer': 'uni_normalizer'},
         'text': {'type': 'string', 'analyzer': 'uni_normalizer'},
+        'title': {'type': 'string', 'analyzer': 'uni_normalizer'},
         'deleted': {'type': 'boolean'},
         'uri': {
             'type': 'string',
@@ -98,7 +99,10 @@ ANNOTATION_MAPPING = {
         },
         'references': {'type': 'string'},
         'document': {
-            'enabled': False,  # indexed explicitly by the save function
+            'properties': {
+                'web_uri': {'type': 'string'},
+                'title': {'type': 'string','analyzer':'standard'}  
+         }
         },
         'thread': {
             'type': 'string',
