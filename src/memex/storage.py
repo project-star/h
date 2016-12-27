@@ -52,9 +52,9 @@ def fetch_url(session, id_):
     :rtype: memex.models.Annotation, NoneType
     """
     print "++++++++in fetch_url function+++++   "
-    val = session.query(hmod.Uri).get(id_)
+    val = session.query(hmod.Page).get(id_)
     print val
-    return session.query(hmod.Uri).get(id_)
+    return session.query(hmod.Page).get(id_)
 
 def fetch_urls(session,userid):
     """
@@ -70,7 +70,7 @@ def fetch_urls(session,userid):
     :rtype: memex.models.Annotation, NoneType
     """
     print "++++++++in fetch_url function+++++   "
-    val = session.query(hmod.Uri).filter(hmod.Uri.userid==userid).all()
+    val = session.query(hmod.Page).filter(hmod.Page.userid==userid).all()
     print val
     return val
 
@@ -89,7 +89,7 @@ def fetch_uri(session, uriaddress, userid, isbookmark):
     :rtype: memex.models.Annotation, NoneType
     """
     try:
-        return session.query(hmod.Uri).filter(hmod.Uri.uriaddress==uriaddress).filter(hmod.Uri.userid==userid).filter(hmod.Uri.isbookmark==isbookmark)
+        return session.query(hmod.Page).filter(hmod.Page.uriaddress==uriaddress).filter(hmod.Page.userid==userid).filter(hmod.Page.isbookmark==isbookmark)
     except types.InvalidUUID:
         return None
 def fetch_uri_id(request,data):
@@ -109,7 +109,7 @@ def fetch_uri_id(request,data):
     uriaddress=data["url"]
     userid=request.authenticated_userid
     try:
-        val = request.db.query(hmod.Uri).filter(hmod.Uri.uriaddress==uriaddress).filter(hmod.Uri.userid==userid)
+        val = request.db.query(hmod.Page).filter(hmod.Page.uriaddress==uriaddress).filter(hmod.Page.userid==userid)
         
         return val
     except types.InvalidUUID:
@@ -165,20 +165,21 @@ def create_uri(request, data):
     """
     print data["userid"]
     print data["uriaddress"]
-    count= request.db.query(hmod.Uri).filter(hmod.Uri.uriaddress==data["uriaddress"]).filter(hmod.Uri.userid==data["userid"]).filter(hmod.Uri.isbookmark==data["isbookmark"]).count()
+    count= request.db.query(hmod.Page).filter(hmod.Page.uriaddress==data["uriaddress"]).filter(hmod.Page.userid==data["userid"]).filter(hmod.Page.isbookmark==data["isbookmark"]).count()
     print count
 
-    uri = hmod.Uri(**data)
+    page = hmod.Page(**data)
     if (count < 1):
-        request.db.add(uri)
-  
+        request.db.add(page)
+    else:
+        request.db.query(hmod.Page).filter(hmod.Page.uriaddress==data["uriaddress"]).filter(hmod.Page.userid==data["userid"]).filter(hmod.Page.isbookmark==data["isbookmark"]).update({hmod.Page.updated:datetime.utcnow()})
 
     # We need to flush the db here so that annotation.created and
     # annotation.updated get created.
     request.db.flush()
 
 
-    return uri
+    return page
 
 
 
@@ -303,7 +304,6 @@ def update_annotation(session, id_, data):
     # Remove any 'document' field first so that we don't try to save it on the
     # annotation object.
     document = data.pop('document', None)
-
     annotation = session.query(models.Annotation).get(id_)
     annotation.updated = datetime.utcnow()
 
@@ -319,6 +319,37 @@ def update_annotation(session, id_, data):
             session, annotation, document_meta_dicts, document_uri_dicts)
 
     return annotation
+
+
+def update_uri(session, annotation):
+    """
+    Update an existing annotation and its associated document metadata.
+
+    Update the annotation identified by id_ with the given
+    data. Create, delete and update document metadata as appropriate.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param id_: the ID of the annotation to be updated, this is assumed to be a
+        validated ID of an annotation that does already exist in the database
+    :type id_: string
+
+    :param data: the validated data with which to update the annotation
+    :type data: dict
+
+    :returns: the updated annotation
+    :rtype: memex.models.Annotation
+
+    """
+    # Remove any 'document' field first so that we don't try to save it on the
+    # annotation object.
+    print "+++ in update_uri +++"
+    print annotation.extra
+    id_ = annotation.extra['uri_id']
+    session.query(hmod.Page).filter_by(id=id_).update({hmod.Page.updated:datetime.utcnow()})
+    session.flush()
+    return "success"
 
 
 def delete_annotation(session, id_):

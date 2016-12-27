@@ -176,6 +176,7 @@ def search(request):
 def create(request):
     """Create an annotation from the POST payload."""
     urischema=schemas.CreateURI(request)
+    print (_json_payload(request))
     uriappstruct = urischema.validate(_json_payload(request))
     uri = storage.create_uri(request, uriappstruct)
     schema = schemas.CreateAnnotationSchema(request)
@@ -193,15 +194,56 @@ def create(request):
             effective_principals=security.Authenticated)
 def readannotatedurls(request):
     """Get the list of annotated urls from the user."""
-    urlsdata = storage.fetch_urls(request.db,request.authenticated_userid)
+    params = request.params.copy()
+    print ("+++ in urls params ++++")
+    print params
     urllist=[]
     retval={}
-    for item in urlsdata:
-        urlstruct=SimpleUrlJSONPresenter(item)
-        urllist.append(urlstruct.asdict())
-    retval["total"] = len(urllist)
-    retval["urllist"] = urllist
-    return retval
+    if len(params) > 0:
+        print ("+++params is not none+++")
+        result = search_lib.Search(request) \
+        .run(params)
+
+        out = {
+            'total': result.total,
+            'rows': _sort_annotations(_present_annotations(request, result.annotation_ids))
+        }
+        print out["rows"]
+        preexistingurl_id = []
+        urlwiseannots={}
+        for item in out["rows"]:
+            searchurlid = item["uri_id"]
+            urlsingledata = storage.fetch_url(request.db,searchurlid)
+            urlstruct=SimpleUrlJSONPresenter(urlsingledata)
+            if searchurlid not in preexistingurl_id:
+                urlwiseannots[str(searchurlid)]=[]
+                urllist.append(urlstruct.asdict())
+                preexistingurl_id.append(searchurlid)
+            urlwiseannots[str(searchurlid)].append(item)
+            print urlwiseannots[searchurlid]
+            print urllist
+            for item1 in urllist:
+                if item1["id"] == searchurlid:
+                    item1["annotation"] = urlwiseannots[str(searchurlid)]
+        retval["total"] = len(urllist)
+        retval["urllist"] = urllist
+        return retval
+    else:
+        print ("+++params is  none+++")
+        urlsdata = storage.fetch_urls(request.db,request.authenticated_userid)
+        urllist=[]
+        retval={}
+        for item in urlsdata:
+            params=MultiDict([(u'uri_id', item.id),(u'limit', 1)])
+            result = search_lib.Search(request) \
+            .run(params)
+            urlstruct=SimpleUrlJSONPresenter(item)
+            urlstructannot = urlstruct.asdict()
+            urlstructannot["annotation"] = _present_annotations(request, result.annotation_ids)
+            urllist.append(urlstructannot)
+        retval["total"] = len(urllist)
+        retval["urllist"] = urllist
+        return retval
 
 @api_config(route_name='api.annotation',
             request_method='GET',
@@ -227,7 +269,7 @@ def renotedread(urldata, request):
 
     out = {
         'total': result.total,
-        'annotations': _present_annotations(request, result.annotation_ids)
+        'annotations': _sort_annotations(_present_annotations(request, result.annotation_ids))
     }
 
     print out
@@ -285,6 +327,7 @@ def read_jsonld(annotation, request):
             permission='update')
 def update(annotation, request):
     """Update the specified annotation with data from the PUT payload."""
+    uri = storage.update_uri(request.db, annotation)
     schema = schemas.UpdateAnnotationSchema(request,
                                             annotation.target_uri,
                                             annotation.groupid)
@@ -306,6 +349,7 @@ def update(annotation, request):
             permission='delete')
 def delete(annotation, request):
     """Delete the specified annotation."""
+    uri = storage.update_uri(request.db, annotation)
     storage.delete_annotation(request.db, annotation.id)
 
     # N.B. We publish the original model (including all the original annotation
@@ -344,6 +388,33 @@ def _present_annotations(request, ids):
     links_service = request.find_service(name='links')
     return [AnnotationJSONPresenter(ann, links_service).asdict()
             for ann in annotations]
+
+def _sort_annotations(annotationlist):
+    returnedannotationlist =[]
+    unsorted=[]
+    sortedval=[]
+    for item in annotationlist:
+        print item
+        if 'viddata' in item:
+            print "+++ this is a video annotated url+++"
+            return annotationlist
+        else: 
+            unsortedat={}
+            print "+++ this is a text annotated url+++"
+            for selectors in item["target"][0]["selector"]:
+                if selectors["type"]=="TextPositionSelector":
+                    unsortedat["id"]=item["id"]
+                    unsortedat["start"]=selectors["start"]
+               
+        unsorted.append(unsortedat)
+    print unsorted
+    sortedval = sorted(unsorted, key=lambda k: k['start'])
+    print sortedval
+    for item in sortedval:
+        for item1 in annotationlist:
+            if (item1["id"] == item["id"]):
+                returnedannotationlist.append(item1)    
+    return returnedannotationlist
 
 
 def _publish_annotation_event(request,

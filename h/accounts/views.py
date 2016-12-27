@@ -138,6 +138,8 @@ class AuthController(object):
         user.last_login_date = datetime.datetime.utcnow()
         self.request.registry.notify(LoginEvent(self.request, user))
         headers = security.remember(self.request, user.userid)
+        print "+++in headers function++++"
+        print headers
         return headers
 
     def _logout(self):
@@ -180,6 +182,12 @@ class AjaxAuthController(AuthController):
 
         user = appstruct['user']
         headers = self._login(user)
+        val={}
+        val['Access-Control-Allow-Origin']='http://loclhost'
+        val1=('Access-Control-Allow-Origin','http://localhost')
+        headers.append(val1)
+        print headers
+        
         self.request.response.headers.extend(headers)
 
         return ajax_payload(self.request, {'status': 'okay'})

@@ -31,6 +31,7 @@ from h.models.group import Group
 from h.models.token import Token
 from h.models.user import User
 from h.models.uri import Uri
+from h.models.page import Page
 
 __all__ = (
     'Activation',
@@ -47,6 +48,7 @@ __all__ = (
     'Token',
     'User',
     'Uri',
+    'Page',
 )
 
 
