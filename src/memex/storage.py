@@ -351,6 +351,38 @@ def update_uri(session, annotation):
     session.flush()
     return "success"
 
+def update_URL(session, id_, data):
+    """
+    Update an existing annotation and its associated document metadata.
+
+    Update the annotation identified by id_ with the given
+    data. Create, delete and update document metadata as appropriate.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param id_: the ID of the annotation to be updated, this is assumed to be a
+        validated ID of an annotation that does already exist in the database
+    :type id_: string
+
+    :param data: the validated data with which to update the annotation
+    :type data: dict
+
+    :returns: the updated annotation
+    :rtype: memex.models.Annotation
+
+    """
+    # Remove any 'document' field first so that we don't try to save it on the
+    # annotation object.
+    url = session.query(hmod.Page).get(id_)
+    url.updated = datetime.utcnow()
+
+
+    for key, value in data.items():
+        setattr(url, key, value)
+    return url
+
+
 
 def delete_annotation(session, id_):
     """

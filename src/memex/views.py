@@ -101,6 +101,8 @@ def index(context, request):
                             .replace('123', ':id')
     renoted_url = request.route_url('api.url', id='123')\
                             .replace('123', ':id')
+    urlupdate_url = request.route_url('api.urlupdate', id='123')\
+                            .replace('123', ':id')
     return {
         'message': "Annotator Store API",
         'links': {
@@ -145,6 +147,11 @@ def index(context, request):
                   'method': 'GET',
                   'url': request.route_url('api.urls'),
                   'desc': "Get all annotatated urls of a user"
+            },
+            'urlupdate': {
+                  'method': 'PUT',
+                  'url': urlupdate_url,
+                  'desc': "Update an existing url"
             },
         }
     }
@@ -342,6 +349,28 @@ def update(annotation, request):
     links_service = request.find_service(name='links')
     presenter = AnnotationJSONPresenter(annotation, links_service)
     return presenter.asdict()
+
+
+@api_config(route_name='api.urlupdate',
+            request_method='PUT',
+            permission='update')
+def urlupdate(url, request):
+    """Update the specified annotation with data from the PUT payload."""
+    print ("++++ in url update ++++")
+    print url.tags
+    print (_json_payload(request))
+    schema = schemas.UpdateURLSchema(request)
+    appstruct = schema.validate(_json_payload(request))
+
+    url = storage.update_URL(request.db,url.id,appstruct)
+
+    #_publish_annotation_event(request, annotation, 'update')
+
+    #links_service = request.find_service(name='links')
+    presenter = SimpleUrlJSONPresenter(url)
+    val= presenter.asdict()
+    val["annotation"] = _json_payload(request)["annotation"]
+    return val
 
 
 @api_config(route_name='api.annotation',

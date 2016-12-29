@@ -322,6 +322,27 @@ class CreateURI(object):
         return new_appstruct
 
 
+class UpdateURLSchema(object):
+
+    """Validate the POSTed data of an update annotation request."""
+
+    def __init__(self, request):
+        self.request = request
+        self.structure = AnnotationSchema()
+    def validate(self, data):
+        appstruct = data
+        print appstruct
+        new_appstruct={}
+        new_appstruct['userid'] = self.request.authenticated_userid
+        new_appstruct['title'] = appstruct.pop('title',u'')
+        new_appstruct['uriaddress'] = appstruct.pop('uri', u'')
+        new_appstruct['tags'] = appstruct.pop('tags', [])
+        new_appstruct['isbookmark'] = False
+        new_appstruct['isdeleted'] = False
+
+        return new_appstruct
+
+
 class UpdateURI(object):
 
     """Validate the POSTed data of an update annotation request."""
