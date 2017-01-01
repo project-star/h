@@ -396,6 +396,19 @@ def delete_annotation(session, id_):
     """
     session.query(models.Annotation).filter_by(id=id_).delete()
 
+def delete_url(session, id_):
+    """
+    Delete the annotation with the given id.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param id_: the annotation ID
+    :type id_: str
+    """
+    session.query(hmod.Page).filter_by(id=id_).delete()
+
+
 
 def expand_uri(session, uri):
     """

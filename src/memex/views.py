@@ -149,10 +149,17 @@ def index(context, request):
                   'desc': "Get all annotatated urls of a user"
             },
             'urlupdate': {
-                  'method': 'PUT',
-                  'url': urlupdate_url,
-                  'desc': "Update an existing url"
-            },
+                  'update': {
+                    'method': 'PUT',
+                    'url': urlupdate_url,
+                    'desc': "Update an existing url"
+                },
+                  'delete': {
+                     'method': 'DELETE',
+                     'url': urlupdate_url,
+                     'desc': "Delete a url"
+                }
+            }
         }
     }
 
@@ -392,6 +399,43 @@ def delete(annotation, request):
         'delete')
 
     return {'id': annotation.id, 'deleted': True}
+
+
+@api_config(route_name='api.urlupdate',
+            request_method='DELETE',
+            permission='delete')
+def urldelete(url, request):
+    """Delete the specified annotation."""
+    params=MultiDict([(u'uri_id', url.id)])
+    print params
+    result = search_lib.Search(request) \
+        .run(params)
+    out = {
+            'total': result.total,
+            'rows': _present_annotations(request, result.annotation_ids)
+        }
+
+    for item in out["rows"]:
+        print item
+        print item["id"]
+        storage.delete_annotation(request.db, item["id"])
+        event = AnnotationEvent(request, item["id"], 'delete', item)
+        request.notify_after_commit(event)
+    #uri = storage.update_uri(request.db, url)
+    storage.delete_url(request.db, url.id)
+
+    # N.B. We publish the original model (including all the original annotation
+    # fields) so that queue subscribers have context needed to decide how to
+    # process the delete event. For example, the streamer needs to know the
+    # target URLs of the deleted annotation in order to know which clients to
+    # forward the delete event to.
+   # _publish_annotation_event(
+   #     request,
+   #     annotation,
+   #     'delete')
+
+    return {'id': url.id, 'deleted': True}
+
 
 
 def _json_payload(request):
