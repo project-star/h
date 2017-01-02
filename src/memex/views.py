@@ -239,6 +239,7 @@ def readannotatedurls(request):
             for item1 in urllist:
                 if item1["id"] == searchurlid:
                     item1["annotation"] = urlwiseannots[str(searchurlid)]
+                    item["allannotation"] = _renotedread_allannotations(searchurlid,request)["annotations"]
         retval["total"] = len(urllist)
         retval["urllist"] = urllist
         return retval
@@ -253,6 +254,7 @@ def readannotatedurls(request):
             .run(params)
             urlstruct=SimpleUrlJSONPresenter(item)
             urlstructannot = urlstruct.asdict()
+            urlstructannot["allannotation"] = _renotedread_allannotations(item.id,request)["annotations"]
             urlstructannot["annotation"] = _present_annotations(request, result.annotation_ids)
             urllist.append(urlstructannot)
         retval["total"] = len(urllist)
@@ -468,7 +470,7 @@ def _sort_annotations(annotationlist):
     sortedval=[]
     for item in annotationlist:
         print item
-        if 'viddata' in item:
+        if not('selector'  in item["target"][0]) or len(item["target"][0]["selector"]) < 4:
             print "+++ this is a video annotated url+++"
             return annotationlist
         else: 
@@ -502,6 +504,21 @@ def _publish_annotation_event(request,
 
     event = AnnotationEvent(request, annotation.id, action, annotation_dict)
     request.notify_after_commit(event)
+
+
+def _renotedread_allannotations(urlid, request):
+    """Return the annotation (simply how it was stored in the database)."""
+    params=MultiDict([(u'uri_id', urlid)])
+    print params
+    result = search_lib.Search(request) \
+        .run(params)
+
+    out = {
+        'total': result.total,
+        'annotations': _sort_annotations(_present_annotations(request, result.annotation_ids))
+    }
+
+    return out
 
 
 def get_db():
