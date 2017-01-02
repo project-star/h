@@ -239,7 +239,7 @@ def readannotatedurls(request):
             for item1 in urllist:
                 if item1["id"] == searchurlid:
                     item1["annotation"] = urlwiseannots[str(searchurlid)]
-                    item["allannotation"] = _renotedread_allannotations(searchurlid,request)["annotations"]
+                    item1["allannotation"] = _renotedread_allannotations(item1["id"],request)["annotations"]
         retval["total"] = len(urllist)
         retval["urllist"] = urllist
         return retval
