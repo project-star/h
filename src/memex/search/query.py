@@ -207,6 +207,22 @@ class UserFilter(object):
         return {'terms': {'user': users}}
 
 
+class TitleFilter(object):
+
+    """
+    A filter that selects only annotations where the 'title' parameter matches.
+    """
+
+    def __call__(self, params):
+        if 'title' not in params:
+            return None
+
+        titles = [v.lower() for k, v in params.items() if k == 'title']
+        del params['title']
+
+        return {'terms': {'title': titles}}
+
+
 class AnyMatcher(object):
 
     """
