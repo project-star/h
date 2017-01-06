@@ -209,11 +209,15 @@ def create(request):
 def readannotatedurls(request):
     """Get the list of annotated urls from the user."""
     params = request.params.copy()
+    valueparams = request.params.copy()
     print ("+++ in urls params ++++")
     print params
+    type = valueparams.pop('type','all')
+    print type 
+    print (type == 'all')
     urllist=[]
     retval={}
-    if len(params) > 0:
+    if len(params) > 0 and type == 'all':
         print ("+++params is not none+++")
         result = search_lib.Search(request) \
         .run(params)
@@ -240,6 +244,25 @@ def readannotatedurls(request):
                 if item1["id"] == searchurlid:
                     item1["annotation"] = urlwiseannots[str(searchurlid)]
                     item1["allannotation"] = _renotedread_allannotations(item1["id"],request)["annotations"]
+        retval["total"] = len(urllist)
+        retval["urllist"] = urllist
+        return retval
+    elif (type != 'all') and len(params) == 1:
+        print ("+++params is  of type+++")
+        urlsdata = storage.fetch_urls(request.db,request.authenticated_userid)
+        urllist=[]
+        retval={}
+        for item in urlsdata:
+            params=MultiDict([(u'uri_id', item.id),(u'limit', 1),(u'type',type)])
+            result = search_lib.Search(request) \
+            .run(params)
+            urlstruct=SimpleUrlJSONPresenter(item)
+            urlstructannot = urlstruct.asdict()
+            urlstructannot["allannotation"] = _renotedread_allannotations(item.id,request)["annotations"]
+            
+            urlstructannot["annotation"] = _present_annotations(request, result.annotation_ids)
+            if (len(result.annotation_ids) > 0):
+                urllist.append(urlstructannot)
         retval["total"] = len(urllist)
         retval["urllist"] = urllist
         return retval
