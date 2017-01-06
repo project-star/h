@@ -76,7 +76,12 @@ class AnnotationJSONPresenter(AnnotationBasePresenter):
 
         if self.annotation.references:
             base['references'] = self.annotation.references
-
+        if ("viddata" in self.annotation.extra):
+            base["type"]="video",
+        elif ("auddata" in self.annotation.extra):
+            base["type"]="audio",
+        else:
+            base["type"]="text",
         annotation = copy.copy(self.annotation.extra) or {}
         annotation.update(base)
 
@@ -116,7 +121,12 @@ class AnnotationSearchIndexPresenter(AnnotationBasePresenter):
 
         if self.annotation.references:
             base['references'] = self.annotation.references
-
+        if ("viddata" in self.annotation.extra):
+            base["type"]="video",
+        elif ("auddata" in self.annotation.extra):
+            base["type"]="audio",
+        else:
+            base["type"]="text",
         annotation = copy.copy(self.annotation.extra) or {}
         annotation.update(base)
 

@@ -28,6 +28,7 @@ ANNOTATION_MAPPING = {
         'uri_id': {'type': 'string', 'analyzer': 'uni_normalizer'},
         'text': {'type': 'string', 'analyzer': 'uni_normalizer'},
         'title': {'type': 'string', 'analyzer': 'uni_normalizer'},
+        'type': {'type': 'string', 'analyzer': 'uni_normalizer'},
         'deleted': {'type': 'boolean'},
         'uri': {
             'type': 'string',

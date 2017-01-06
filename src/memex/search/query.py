@@ -222,6 +222,20 @@ class TitleFilter(object):
 
         return {'terms': {'title': titles}}
 
+class TypeFilter(object):
+
+    """
+    A filter that selects only annotations where the 'type' parameter matches.
+    """
+
+    def __call__(self, params):
+        if 'type' not in params:
+            return None
+
+        types = [v.lower() for k, v in params.items() if k == 'type']
+        del params['type']
+
+        return {'terms': {'type': types}}
 
 class AnyMatcher(object):
 
