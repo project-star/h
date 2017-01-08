@@ -9,11 +9,17 @@ MATCHERS_KEY = 'memex.search.matchers'
 
 log = logging.getLogger(__name__)
 
+
+annotation_ids_map = {}
+
 SearchResult = namedtuple('SearchResult', [
     'total',
     'annotation_ids',
+    'annotation_ids_map',
     'reply_ids',
     'aggregations'])
+
+
 
 
 class Search(object):
@@ -46,10 +52,10 @@ class Search(object):
         :returns: The search results
         :rtype: SearchResult
         """
-        total, annotation_ids, aggregations = self.search_annotations(params)
+        total, annotation_ids, annotation_ids_map, aggregations = self.search_annotations(params)
         reply_ids = self.search_replies(annotation_ids)
 
-        return SearchResult(total, annotation_ids, reply_ids, aggregations)
+        return SearchResult(total, annotation_ids, annotation_ids_map, reply_ids, aggregations)
 
     def append_filter(self, filter_):
         """Append a search filter to the annotation and reply query."""
@@ -67,15 +73,19 @@ class Search(object):
     def search_annotations(self, params):
         if self.separate_replies:
             self.builder.append_filter(query.TopLevelAnnotationsFilter())
-
+        
+        print params
         response = self.es.conn.search(index=self.es.index,
                                        doc_type=self.es.t.annotation,
                                        _source=False,
                                        body=self.builder.build(params))
+        print response
         total = response['hits']['total']
         annotation_ids = [hit['_id'] for hit in response['hits']['hits']]
+        for itemvar in response['hits']['hits']:
+            annotation_ids_map[itemvar['_id']] = itemvar['_score']
         aggregations = self._parse_aggregation_results(response.get('aggregations', None))
-        return (total, annotation_ids, aggregations)
+        return (total, annotation_ids, annotation_ids_map, aggregations)
 
     def search_replies(self, annotation_ids):
         if not self.separate_replies:

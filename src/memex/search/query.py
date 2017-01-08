@@ -2,7 +2,7 @@
 from memex import storage
 from memex import uri
 
-LIMIT_DEFAULT = 20
+LIMIT_DEFAULT = 70
 LIMIT_MAX = 200
 
 
@@ -60,7 +60,7 @@ class Builder(object):
         return {
             "from": p_from,
             "size": p_size,
-            "sort": p_sort,
+#            "sort": p_sort,
             "query": query,
             "aggs": aggregations,
         }
