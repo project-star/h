@@ -215,6 +215,9 @@ class RegisterSchema(CSRFSchema):
     password = new_password_node(title=_('Password'))
 
 
+class InviteSchema(CSRFSchema):
+    email = email_node(title=_('Email address'))
+
 class ResetCode(colander.SchemaType):
 
     """Schema type transforming a reset code to a user and back."""
