@@ -328,6 +328,166 @@ class ResetController(object):
             'success')
         self.request.registry.notify(PasswordResetEvent(self.request, user))
 
+@view_defaults(route_name='invitesignup',
+               renderer='h:templates/accounts/invitesignup.html.jinja2')
+class InviteSignupController(object):
+
+    def __init__(self, request):
+        tos_link = ('<a class="link" href="/terms-of-service">' +
+                    _('Terms of Service') +
+                    '</a>')
+        cg_link = ('<a class="link" href="/community-guidelines">' +
+                   _('Community Guidelines') +
+                   '</a>')
+        form_footer = _(
+            'You are agreeing to our {tos_link} and '
+            '{cg_link}.').format(tos_link=tos_link, cg_link=cg_link)
+
+        self.request = request
+        self.schema = schemas.RegisterSchema().bind(request=self.request)
+        self.form = request.create_form(self.schema,
+                                        buttons=(deform.Button(title=_('Sign up'),
+                                                               css_class='js-signup-btn'),),
+                                        css_class='js-signup-form',
+                                        footer=form_footer)
+
+    @view_config(request_method='GET')
+    def get(self):
+        """Render the empty registration form."""
+        self._redirect_if_logged_in()
+        code = self.request.matchdict.get('code')
+        id_ = self.request.matchdict.get('id')
+        try:
+            id_ = int(id_)
+        except ValueError:
+            raise httpexceptions.HTTPNotFound()
+
+        invitation = models.Invitation.get_by_code(self.request.db, code)
+        if invitation is None:
+            self.request.session.flash(jinja2.Markup(_(
+                "We didn't recognize that invitation link. "
+                "Have you already accepted your invitation? "
+                'If so, try <a href="{url}">logging in</a> using the username '
+                'and password that you provided.').format(
+                    url=self.request.route_url('login'))),
+                'error')
+            return httpexceptions.HTTPFound(
+                location=self.request.route_url('index'))
+
+        invite = models.Invite.get_by_invitation(self.request.db, invitation)
+        if invite is None or invite.id != id_:
+            raise httpexceptions.HTTPNotFound()
+
+#        invite.accepted()
+
+#        self.request.session.flash(jinja2.Markup(_(
+#            'Your account has been activated! '
+#            'You can now <a href="{url}">log in</a> using the password you '
+#            'provided.').format(url=self.request.route_url('login'))),
+#            'success')
+        return {'form': self.form.render()}
+
+    @view_config(request_method='POST')
+    def post(self):
+        """
+        Handle submission of the new user registration form.
+
+        Validates the form data, creates a new activation for the user, sends
+        the activation mail, and then redirects the user to the index.
+        """
+        self._redirect_if_logged_in()
+        code = self.request.matchdict.get('code')
+        id_ = self.request.matchdict.get('id')
+        try:
+            id_ = int(id_)
+        except ValueError:
+            raise httpexceptions.HTTPNotFound()
+        invitation = models.Invitation.get_by_code(self.request.db, code)
+        invite = models.Invite.get_by_invitation(self.request.db, invitation)
+        if invite is None or invite.id != id_:
+            raise httpexceptions.HTTPNotFound()
+        try:
+            appstruct = self.form.validate(self.request.POST.items())
+        except deform.ValidationFailure:
+            return {'form': self.form.render()}
+
+        invite_signup_service = self.request.find_service(name='user_invite_signup')
+        invite_signup_service.signup(username=appstruct['username'],
+                              email=appstruct['email'],
+                              password=appstruct['password'])
+        invite.accepted()
+        self.request.session.flash(jinja2.Markup(_(
+            'Your account has been activated! '
+            'You can now <a href="{url}">log in</a> using the password you '
+            'provided.').format(url=self.request.route_url('login'))),
+            'success')
+#        self.request.session.flash(jinja2.Markup(_(
+#            "You have been signed up renote service"
+#            "account.")), 'success')
+
+        return httpexceptions.HTTPFound(
+            location=self.request.route_url('index'))
+
+    def _redirect_if_logged_in(self):
+        if self.request.authenticated_userid is not None:
+            raise httpexceptions.HTTPFound(self.request.route_url('renote'))
+
+
+@view_defaults(route_name='newinvite',
+               renderer='h:templates/accounts/invite.html.jinja2',permission='admin_users')
+class InviteController(object):
+
+    def __init__(self, request):
+        tos_link = ('<a class="link" href="/terms-of-service">' +
+                    _('Terms of Service') +
+                    '</a>')
+        cg_link = ('<a class="link" href="/community-guidelines">' +
+                   _('Community Guidelines') +
+                   '</a>')
+        form_footer = _(
+            'You are agreeing to our {tos_link} and '
+            '{cg_link}.').format(tos_link=tos_link, cg_link=cg_link)
+
+        self.request = request
+        self.schema = schemas.InviteSchema().bind(request=self.request)
+        self.form = request.create_form(self.schema,
+                                        buttons=(deform.Button(title=_('Invite'),
+                                                               css_class='js-signup-btn'),),
+                                        css_class='js-signup-form',
+                                        footer=form_footer)
+
+    @view_config(request_method='GET')
+    def get(self):
+        """Render the empty registration form."""
+
+        return {'form': self.form.render()}
+
+    @view_config(request_method='POST')
+    def post(self):
+        """
+        Handle submission of the new user registration form.
+
+        Validates the form data, creates a new activation for the user, sends
+        the activation mail, and then redirects the user to the index.
+        """
+
+        try:
+            appstruct = self.form.validate(self.request.POST.items())
+        except deform.ValidationFailure:
+            return {'form': self.form.render()}
+
+        invite_service = self.request.find_service(name='user_invite')
+        invite_service.invite(email=appstruct['email'])
+
+        self.request.session.flash(jinja2.Markup(_(
+            "Invitation link is being sent to mentioned email account")), 'success')
+
+        return httpexceptions.HTTPFound(
+            location=self.request.route_url('index'))
+
+    def _redirect_if_logged_in(self):
+        if self.request.authenticated_userid is not None:
+            raise httpexceptions.HTTPFound(self.request.route_url('renote'))
 
 @view_defaults(route_name='signup',
                renderer='h:templates/accounts/signup.html.jinja2')
@@ -722,6 +882,8 @@ def includeme(config):
     config.add_route('login', '/login')
     config.add_route('logout', '/logout')
     config.add_route('signup', '/signup')
+    config.add_route('newinvite', '/newinvite')
+    config.add_route('invitesignup', '/invitesignup/{id}/{code}')
     config.add_route('activate', '/activate/{id}/{code}')
     config.add_route('forgot_password', '/forgot-password')
     config.add_route('account_reset', '/account/reset')

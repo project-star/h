@@ -172,10 +172,11 @@ def search(request):
     separate_replies = params.pop('_separate_replies', False)
     result = search_lib.Search(request, separate_replies=separate_replies) \
         .run(params)
-
+    print ("+++++ search result as returned by elastic search +++++++")
+    print result
     out = {
         'total': result.total,
-        'rows': _present_annotations(request, result.annotation_ids)
+        'rows': _present_annotations_withscore(request, result.annotation_ids, result.annotation_ids_map)
     }
 
     if separate_replies:
@@ -224,7 +225,7 @@ def readannotatedurls(request):
 
         out = {
             'total': result.total,
-            'rows': _sort_annotations(_present_annotations(request, result.annotation_ids))
+            'rows': _sort_annotations(_present_annotations_withscore(request, result.annotation_ids, result.annotation_ids_map))
         }
         print out["rows"]
         preexistingurl_id = []
@@ -244,6 +245,7 @@ def readannotatedurls(request):
                 if item1["id"] == searchurlid:
                     item1["annotation"] = urlwiseannots[str(searchurlid)]
                     item1["allannotation"] = _renotedread_allannotations(item1["id"],request)["annotations"]
+                    item1["relevance"] = _max_relevance_perurl(item1["annotation"])
         retval["total"] = len(urllist)
         retval["urllist"] = urllist
         return retval
@@ -260,7 +262,8 @@ def readannotatedurls(request):
             urlstructannot = urlstruct.asdict()
             urlstructannot["allannotation"] = _renotedread_allannotations(item.id,request)["annotations"]
             
-            urlstructannot["annotation"] = _present_annotations(request, result.annotation_ids)
+            urlstructannot["annotation"] = _present_annotations_withscore(request, result.annotation_ids, result.annotation_ids_map)
+            urlstructannot["relevance"] = _max_relevance_perurl(urlstructannot["annotation"])      
             if (len(result.annotation_ids) > 0):
                 urllist.append(urlstructannot)
         retval["total"] = len(urllist)
@@ -278,7 +281,8 @@ def readannotatedurls(request):
             urlstruct=SimpleUrlJSONPresenter(item)
             urlstructannot = urlstruct.asdict()
             urlstructannot["allannotation"] = _renotedread_allannotations(item.id,request)["annotations"]
-            urlstructannot["annotation"] = _present_annotations(request, result.annotation_ids)
+            urlstructannot["annotation"] = _present_annotations_withscore(request, result.annotation_ids, result.annotation_ids_map)
+            urlstructannot["relevance"] = _max_relevance_perurl(urlstructannot["annotation"])
             urllist.append(urlstructannot)
         retval["total"] = len(urllist)
         retval["urllist"] = urllist
@@ -308,7 +312,7 @@ def renotedread(urldata, request):
 
     out = {
         'total': result.total,
-        'annotations': _sort_annotations(_present_annotations(request, result.annotation_ids))
+        'annotations': _sort_annotations(_present_annotations_withscore(request, result.annotation_ids, result.annotation_ids_map))
     }
 
     print out
@@ -341,7 +345,7 @@ def renotedrecallapi(request):
 
     out = {
         'total': result.total,
-        'annotations': _present_annotations(request, result.annotation_ids)
+        'annotations': _present_annotations_withscore(request, result.annotation_ids, result.annotation_ids_map)
     }
 
     print out
@@ -487,13 +491,31 @@ def _present_annotations(request, ids):
     return [AnnotationJSONPresenter(ann, links_service).asdict()
             for ann in annotations]
 
+def _present_annotations_withscore(request, ids, ids_map):
+    """Load annotations by id from the database and present them along with their scores obtained from search"""
+    def eager_load_documents(query):
+        return query.options(
+            subqueryload(models.Annotation.document))
+
+    annotations = storage.fetch_ordered_annotations(request.db, ids,
+                                                    query_processor=eager_load_documents)
+    links_service = request.find_service(name='links')
+    return [AnnotationJSONPresenter(ann, links_service).asdict(ids_map)
+            for ann in annotations]
+
+def _max_relevance_perurl(annotationlist):
+    max_score=0.0
+    for item in annotationlist:
+         max_score=max(max_score,item['relevance'])
+    return max_score
+            
 def _sort_annotations(annotationlist):
     returnedannotationlist =[]
     unsorted=[]
     sortedval=[]
     for item in annotationlist:
         print item
-        if not('selector'  in item["target"][0]) or len(item["target"][0]["selector"]) < 4:
+        if not('selector'  in item["target"][0]) or len(item["target"][0]["selector"]) < 2:
             print "+++ this is a video annotated url+++"
             return annotationlist
         else: 
@@ -538,7 +560,7 @@ def _renotedread_allannotations(urlid, request):
 
     out = {
         'total': result.total,
-        'annotations': _sort_annotations(_present_annotations(request, result.annotation_ids))
+        'annotations': _sort_annotations(_present_annotations_withscore(request, result.annotation_ids, result.annotation_ids_map))
     }
 
     return out

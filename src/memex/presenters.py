@@ -55,9 +55,16 @@ class AnnotationJSONPresenter(AnnotationBasePresenter):
 
     """Present an annotation in the JSON format returned by API requests."""
 
-    def asdict(self):
+    def asdict(self,*args):
         docpresenter = DocumentJSONPresenter(self.annotation.document)
-
+        if (len(args) == 1):
+            ids_map=args[0]
+        else:
+            ids_map={}
+        if self.annotation.id in ids_map:
+            relevance=ids_map[self.annotation.id]
+        else:
+            relevance=0.0
         base = {
             'id': self.annotation.id,
             'created': self.created,
@@ -71,7 +78,8 @@ class AnnotationJSONPresenter(AnnotationBasePresenter):
             'target': self.target,
             'document': docpresenter.asdict(),
             'links': self.links,
-            'title': self.annotation.document.title
+            'title': self.annotation.document.title,
+            'relevance': relevance
         }
 
         if self.annotation.references:

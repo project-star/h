@@ -69,7 +69,10 @@ def includeme(config):
                                     name='user')
     config.register_service_factory('.services.user_signup_service_factory',
                                     name='user_signup')
-
+    config.register_service_factory('.services.user_invite_signup_service_factory',
+                                    name='user_invite_signup')
+    config.register_service_factory('.services.user_invite_service_factory',
+                                    name='user_invite')
     config.include('.schemas')
     config.include('.subscribers')
 

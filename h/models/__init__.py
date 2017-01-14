@@ -32,6 +32,8 @@ from h.models.token import Token
 from h.models.user import User
 from h.models.uri import Uri
 from h.models.page import Page
+from h.models.invitation import Invitation
+from h.models.invite import Invite
 
 __all__ = (
     'Activation',
@@ -44,6 +46,8 @@ __all__ = (
     'Feature',
     'FeatureCohort',
     'Group',
+    'Invitation',
+    'Invite',
     'Subscriptions',
     'Token',
     'User',
