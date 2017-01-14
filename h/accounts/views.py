@@ -96,7 +96,7 @@ class AuthController(object):
 
         self.login_redirect = self.request.params.get(
             'next',
-            self.request.route_url('stream'))
+            self.request.route_url('renote'))
         self.logout_redirect = self.request.route_url('index')
 
     @view_config(request_method='GET')
@@ -548,7 +548,7 @@ class SignupController(object):
 
     def _redirect_if_logged_in(self):
         if self.request.authenticated_userid is not None:
-            raise httpexceptions.HTTPFound(self.request.route_url('stream'))
+            raise httpexceptions.HTTPFound(self.request.route_url('renote'))
 
 
 @view_defaults(route_name='activate')
@@ -564,7 +564,7 @@ class ActivateController(object):
 
         Checks if the activation code passed is valid, and (as a safety check)
         that it is an activation for the passed user id. If all is well,
-        activate the user and redirect them to the stream.
+        activate the user and redirect them to the renote.
         """
         code = self.request.matchdict.get('code')
         id_ = self.request.matchdict.get('id')
