@@ -6,14 +6,17 @@
 
 {% block page_title %}Log in{% endblock %}
 
+
 {% block content %}
+
+
   {%if feature('activity_pages') %}
     {% include "h:templates/includes/logo-header.html.jinja2" %}
     <div class="form-container content">
       <h1 class="form-header">Log in</h1>
       {{ form }}
       <footer class="form-footer">
-        Don't have a Renoted account?
+        Don't have a ReNoted account?
         <a class="link" href="{{ request.route_path('signup') }}">Sign up</a>
       </footer>
     </div>

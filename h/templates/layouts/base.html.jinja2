@@ -18,6 +18,7 @@
       {%- endblock -%}
     </title>
 
+
     {% if link_tags %}
       {% for link in link_tags %}
         <link rel="{{ link.rel }}" type="{{ link.type }}"
@@ -28,6 +29,12 @@
     {% for attrs in link_attrs -%}
       <link {% for key, value in attrs.items() %}{{ key }}="{{ value }}" {% endfor %}/>
     {% endfor -%}
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:regular,bold,italic,thin,light,bolditalic,black,medium&amp;lang=en">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.deep_purple-pink.min.css">
+    <link rel="stylesheet" href="/assets/styles/styles.css">
+    <link rel="stylesheet" href="/assets/styles/renoted_styles.css">
 
     {% block styles %}
       {% for url in asset_urls(style_bundle) %}

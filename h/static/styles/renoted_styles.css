@@ -1,0 +1,53 @@
+.centertext {
+	text-align: center;
+	margin: auto;
+}
+
+.header_color {
+	background-color: rgb(70, 107, 193);
+}
+
+.tab_color {
+	background-color: rgb(11, 51, 144);
+
+}
+
+.icon_color {
+	background-color: rgb(22, 161, 179);
+}
+
+.list-use {
+  width: 750px;
+}
+
+.list-margins {
+	margin-left: 75px;
+	margin-top: 0px;
+}
+
+.listitem-margins {
+	margin-right: 50px;
+}
+
+<!-- Square card -->
+
+.demo-card-square.mdl-card {
+  width: 320px;
+  height: 320px;
+  border:1px solid black;
+}
+.demo-card-square > .mdl-card__title {
+  color: #fff;
+  background:
+  center right 15% no-repeat #46B6AC;
+}
+
+.mdl-list__item-circle, .mdl-list__item-circle.icons {
+    height: 50px;
+    width: 50px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    background-color: #757575;
+    font-size: 40px;
+    color: #fff;
+}
