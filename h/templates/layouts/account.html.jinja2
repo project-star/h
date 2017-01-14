@@ -14,10 +14,13 @@
 {% else %}
 {%- set nav_pages = [
     ('account', 'Account'),
-    ('account_notifications', 'Notifications'),
-    ('account_developer', 'Developer'),
 ] -%}
 {% endif %}
+
+<!-- Removed these from Nav:
+    ('account_notifications', 'Notifications'),
+    ('account_developer', 'Developer'), 
+-->
 
 {% block page_title %}{{ page_title }}{% endblock %}
 
