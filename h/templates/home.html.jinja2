@@ -67,7 +67,7 @@
          <!-- <a href="#features" class="mdl-layout__tab">Request Invite</a>
          -->
           {% if username %}
-            <span class="mdl-layout__tab">Logged in as {{username}}</span>
+            <span class="mdl-layout__tab">Go to {{username}}'s <a href="{{ base_url }}renote" style="color: #8ea1cc">Annotations</a> </span>
             <a href="{{ request.route_url("logout") }}" class="mdl-layout__tab">LOG OUT</a>
           {% else %}
             <a href="{{ base_url }}login" class="mdl-layout__tab">LOG IN</a>
@@ -269,7 +269,7 @@
 -->
         </div>
 
-        <footer class="mdl-mega-footer">
+<!--         <footer class="mdl-mega-footer">
           <div class="mdl-mega-footer--middle-section">
           <div class="mdl-mega-footer--drop-down-section">
               <input class="mdl-mega-footer--heading-checkbox" type="checkbox" checked>
@@ -327,7 +327,7 @@
             </ul>
           </div>
           -->
-        </footer>
+        </footer> -->
 
       </main>
     </div>
