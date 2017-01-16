@@ -182,8 +182,7 @@ class CreateAnnotationSchema(object):
         new_appstruct['references'] = appstruct.pop('references', [])
 
         if 'permissions' in appstruct:
-            new_appstruct['shared'] = _shared(appstruct.pop('permissions'),
-                                              new_appstruct['groupid'])
+            new_appstruct['shared'] = False
         else:
             new_appstruct['shared'] = False
 
@@ -229,8 +228,7 @@ class CreateFakeAnnotationSchema(object):
         new_appstruct['references'] = appstruct.pop('references', [])
 
         if 'permissions' in appstruct:
-            new_appstruct['shared'] = _shared(appstruct.pop('permissions'),
-                                              new_appstruct['groupid'])
+            new_appstruct['shared'] = False
         else:
             new_appstruct['shared'] = False
 
@@ -277,8 +275,7 @@ class UpdateAnnotationSchema(object):
             new_appstruct['target_uri'] = appstruct.pop('uri')
 
         if 'permissions' in appstruct:
-            new_appstruct['shared'] = _shared(appstruct.pop('permissions'),
-                                              self.groupid)
+            new_appstruct['shared'] = False
 
         if 'target' in appstruct:
             new_appstruct['target_selectors'] = _target_selectors(
