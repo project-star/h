@@ -339,9 +339,7 @@ class InviteSignupController(object):
         cg_link = ('<a class="link" href="/community-guidelines">' +
                    _('Community Guidelines') +
                    '</a>')
-        form_footer = _(
-            'You are agreeing to our {tos_link} and '
-            '{cg_link}.').format(tos_link=tos_link, cg_link=cg_link)
+        form_footer = _(' ')
 
         self.request = request
         self.schema = schemas.RegisterSchema().bind(request=self.request)
@@ -416,14 +414,14 @@ class InviteSignupController(object):
                               email=appstruct['email'],
                               password=appstruct['password'])
         invite.accepted()
-        self.request.session.flash(jinja2.Markup(_(
-            'Your account has been activated! '
-            'You can now <a href="{url}">log in</a> using the password you '
-            'provided.').format(url=self.request.route_url('login'))),
-            'success')
 #        self.request.session.flash(jinja2.Markup(_(
-#            "You have been signed up renote service"
-#            "account.")), 'success')
+#            'Your account has been activated! '
+#            'You can now <a href="{url}">log in</a> using the password you '
+#            'provided.').format(url=self.request.route_url('login'))),
+#            'success')
+        self.request.session.flash(jinja2.Markup(_(
+            "You have been signed up renote service. Please Login in your "
+            "account.")), 'success')
 
         return httpexceptions.HTTPFound(
             location=self.request.route_url('index'))

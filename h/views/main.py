@@ -51,37 +51,6 @@ def annotation_page(annotation, request):
     })
 
 
-@view_config(route_name='renotedannotation', permission='read')
-def renotedannotation_page(urldata, request):
-    print urldata.isbookmark
-#    document = urldata.rows.annotations[0].document
-#    if document and document.title:
-#        title = 'Annotation by {user} on {title}'.format(
-#            user=urldata.userid.replace('acct:', ''),
-#            title=document.title)
-#    else:
-    title = 'Annotation by {user}'.format(
-       user=urldata.userid.replace('acct:', ''))
-    print "++++"
-    print title
-    print "++++"
-
-    alternate = request.route_url('api.url', id=urldata.id)
-    print alternate
-    print "++++"
-    return render_app(request, {
-        'meta_attrs': (
-            {'property': 'og:title', 'content': title},
-            {'property': 'og:description', 'content': ''},
-            {'property': 'og:image', 'content': '/assets/images/logo.png'},
-            {'property': 'og:site_name', 'content': 'Hypothes.is'},
-            {'property': 'og:url', 'content': request.url},
-        ),
-        'link_attrs': (
-            {'rel': 'alternate', 'href': alternate,
-                'type': 'application/json'},
-        ),
-    })
 @view_config(route_name='robots', http_cache=(86400, {'public': True}))
 def robots(context, request):
     return response.FileResponse('h/static/robots.txt',
