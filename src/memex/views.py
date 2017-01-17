@@ -517,7 +517,17 @@ def _sort_annotations(annotationlist):
         print item
         if not('selector'  in item["target"][0]) or len(item["target"][0]["selector"]) < 2:
             print "+++ this is a video annotated url+++"
-            return annotationlist
+            unsortedat={}
+            print ('viddata' in item)
+            if ('viddata' in item):
+                unsortedat["id"]=item["id"]
+                unsortedat["start"]=item["viddata"][0]["starttime"]
+            elif ('auddata' in item):
+                unsortedat["id"]=item["id"]
+                unsortedat["start"]=item["auddata"][0]["starttime"]
+            else:
+                unsortedat["id"]=item["id"]
+                unsortedat["start"] = 0
         else: 
             unsortedat={}
             print "+++ this is a text annotated url+++"
