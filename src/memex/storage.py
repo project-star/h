@@ -181,7 +181,34 @@ def create_uri(request, data):
 
     return page
 
+def create_sharing(request, data):
+    """
+    Create an annotation from passed data.
 
+    :param request: the request object
+    :type request: pyramid.request.Request
+
+    :param data: a dictionary of annotation properties
+    :type data: dict
+
+    :returns: the created annotation
+    :rtype: dict
+    """
+    count= request.db.query(hmod.Sharing).filter(hmod.Sharing.sharedtoemail==data["sharedtoemail"]).filter(hmod.Sharing.annotationid==data["annotationid"]).count()
+    print count
+
+    sharing = hmod.Sharing(**data)
+    if (count < 1):
+        request.db.add(sharing)
+    else:
+        sharing = request.db.query(hmod.Sharing).filter(hmod.Sharing.sharedtoemail==data["sharedtoemail"]).filter(hmod.Sharing.annotationid==data["annotationid"]).all()[0]
+
+    # We need to flush the db here so that annotation.created and
+    # annotation.updated get created.
+    request.db.flush()
+
+
+    return sharing
 
 def create_annotation(request, data):
     """
@@ -408,7 +435,10 @@ def delete_url(session, id_):
     """
     session.query(hmod.Page).filter_by(id=id_).delete()
 
-
+def get_user_by_email(session,email):
+    val = session.query(hmod.User).filter(hmod.User.email==email).all()
+    print val
+    return val
 
 def expand_uri(session, uri):
     """

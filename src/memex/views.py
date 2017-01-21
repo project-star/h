@@ -27,6 +27,7 @@ from memex.events import AnnotationEvent
 from memex.presenters import AnnotationJSONPresenter
 from memex.renotedpresenters import UrlJSONPresenter
 from memex.renotedpresenters import SimpleUrlJSONPresenter
+from memex.renotedpresenters import SimpleSharingJSONPresenter
 from memex.presenters import AnnotationJSONLDPresenter
 from memex import search as search_lib
 from memex import schemas
@@ -128,6 +129,13 @@ def index(context, request):
                     'desc': "Delete an annotation"
                 }
             },
+            'sharing': {
+                'create': {
+                    'method': 'POST',
+                    'url': request.route_url('api.sharings'),
+                    'desc': "Create new sharings"
+                }
+            },
             'search': {
                 'method': 'GET',
                 'url': request.route_url('api.search'),
@@ -203,6 +211,36 @@ def create(request):
     links_service = request.find_service(name='links')
     presenter = AnnotationJSONPresenter(annotation, links_service)
     return presenter.asdict()
+
+
+@api_config(route_name='api.sharings',
+            request_method='POST',
+            effective_principals=security.Authenticated)
+def createSharing(request):
+    """Create an annotation from the POST payload."""
+    value= (_json_payload(request))
+    retvalue={}
+    retvalue["total"]=0
+    sharings=[]
+    sharedtoemail = value["sharedtoemail"]
+    print value["annotation_ids"]
+    for item in value["annotation_ids"]:
+        result = _createannotationwisesharing(item,sharedtoemail,request)
+        print result
+        retvalue["total"] = retvalue["total"] +1 
+        sharings.append(result)
+    retvalue["sharings"] = sharings; 
+    #uriappstruct = urischema.validate(_json_payload(request))
+    #uri = storage.create_uri(request, uriappstruct)
+    #schema = schemas.CreateAnnotationSchema(request)
+    #appstruct = schema.validate(_json_payload(request))
+    #annotation = storage.create_annotation(request, appstruct)
+
+    #_publish_annotation_event(request, annotation, 'create')
+
+    #links_service = request.find_service(name='links')
+    #presenter = AnnotationJSONPresenter(annotation, links_service)
+    return retvalue
 
 @api_config(route_name='api.urls',
             request_method='GET',
@@ -574,6 +612,19 @@ def _renotedread_allannotations(urlid, request):
     }
 
     return out
+
+
+def _createannotationwisesharing(item,sharedtoemail,request):
+    data= {}
+    data["sharedtousername"] = storage.get_user_by_email(request.db,sharedtoemail)[0].username
+    data["sharedtoemail"] = sharedtoemail
+    data["sharedbyuserid"] = request.authenticated_userid
+    data["annotationid"] = item
+    sharing = storage.create_sharing(request, data)
+
+    presenter = SimpleSharingJSONPresenter(sharing)
+    return presenter.asdict()
+
 
 
 def get_db():

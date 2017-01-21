@@ -34,7 +34,7 @@ from h.models.uri import Uri
 from h.models.page import Page
 from h.models.invitation import Invitation
 from h.models.invite import Invite
-
+from h.models.sharing import Sharing
 __all__ = (
     'Activation',
     'Annotation',
@@ -48,6 +48,7 @@ __all__ = (
     'Group',
     'Invitation',
     'Invite',
+    'Sharing',
     'Subscriptions',
     'Token',
     'User',
