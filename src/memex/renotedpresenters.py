@@ -79,6 +79,27 @@ class SimpleUrlJSONPresenter(SimpleUrlPresenter):
         urldata.update(base)
         return urldata
 
+class SimpleSharedUrlJSONPresenter(SimpleUrlPresenter):
+
+    """Present a url in the JSON format returned by API requests."""
+    def asdict(self):
+
+        base = {
+            'id': self.urldata.id,
+            'created': self.created,
+            'updated': self.updated,
+            'title': self.urldata.title,
+            'uriaddress': self.urldata.uriaddress,
+            'user': self.urldata.userid,
+            'tags': self.urldata.tags,
+            'isbookmark': self.urldata.isbookmark,
+            'isdeleted': self.urldata.isdeleted,
+            'relevance': 0
+        }
+        urldata = {}
+        urldata.update(base)
+        return urldata
+
 class SimpleSharingPresenter(object):
     def __init__(self, sharing):
         self.sharing = sharing
@@ -106,6 +127,7 @@ class SimpleSharingJSONPresenter(SimpleSharingPresenter):
             'sharedtousername': self.sharing.sharedtousername,
             'sharedbyuserid': self.sharing.sharedbyuserid,
             'annotationid': self.sharing.annotationid,
+            'uri_id': self.sharing.uri_id,
             'isshared': self.sharing.isshared
         }
         sharing = {}

@@ -150,6 +150,35 @@ def fetch_ordered_annotations(session, ids, query_processor=None):
     anns = sorted(query, key=lambda a: ordering.get(a.id))
     return anns
 
+def fetch_ordered_sharedannotations(session, uri_id):
+    """
+    Fetch all annotations with the given ids and order them based on the list
+    of ids.
+
+    The optional `query_processor` parameter allows for passing in a function
+    that can change the query before it is run, especially useful for
+    eager-loading certain data. The function will get the query as an argument
+    and has to return a query object again.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param ids: the list of annotation ids
+    :type ids: list
+
+    :param query_processor: an optional function that takes the query and
+                            returns an updated query
+    :type query_processor: callable
+
+    :returns: the annotation, if found, or None.
+    :rtype: memex.models.Annotation, NoneType
+    """
+
+
+    query = session.query(hmod.Sharedannotation).filter(hmod.Sharedannotation.uri_id==uri_id).all()
+    return query
+   
+
 def create_uri(request, data):
     """
     Create an annotation from passed data.
@@ -181,6 +210,37 @@ def create_uri(request, data):
 
     return page
 
+def create_shareduri(request, data):
+    """
+    Create an annotation from passed data.
+
+    :param request: the request object
+    :type request: pyramid.request.Request
+
+    :param data: a dictionary of annotation properties
+    :type data: dict
+
+    :returns: the created annotation
+    :rtype: dict
+    """
+    print data["userid"]
+    print data["uriaddress"]
+    count= request.db.query(hmod.Sharedpage).filter(hmod.Sharedpage.uriaddress==data["uriaddress"]).filter(hmod.Sharedpage.userid==data["userid"]).count()
+    print count
+
+    sharedpage = hmod.Sharedpage(**data)
+    if (count < 1):
+        request.db.add(sharedpage)
+    else:
+        request.db.query(hmod.Sharedpage).filter(hmod.Sharedpage.uriaddress==data["uriaddress"]).filter(hmod.Sharedpage.userid==data["userid"]).update({hmod.Sharedpage.updated:datetime.utcnow()})
+        sharedpage = request.db.query(hmod.Sharedpage).filter(hmod.Sharedpage.uriaddress==data["uriaddress"]).filter(hmod.Sharedpage.userid==data["userid"]).all()[0]
+    # We need to flush the db here so that annotation.created and
+    # annotation.updated get created.
+    request.db.flush()
+
+
+    return sharedpage
+
 def create_sharing(request, data):
     """
     Create an annotation from passed data.
@@ -206,9 +266,35 @@ def create_sharing(request, data):
     # We need to flush the db here so that annotation.created and
     # annotation.updated get created.
     request.db.flush()
-
-
     return sharing
+
+
+def create_sharedannotation(request, data):
+    """
+    Create an annotation from passed data.
+
+    :param request: the request object
+    :type request: pyramid.request.Request
+
+    :param data: a dictionary of annotation properties
+    :type data: dict
+
+    :returns: the created annotation
+    :rtype: dict
+    """
+    count= request.db.query(hmod.Sharedannotation).filter(hmod.Sharedannotation.sharingid==data["sharingid"]).count()
+    print count
+
+    sharedannotation = hmod.Sharedannotation(**data)
+    if (count < 1):
+        request.db.add(sharedannotation)
+    else:
+        sharedannotation = request.db.query(hmod.Sharedannotation).filter(hmod.Sharedannotation.sharingid==data["sharingid"]).all()[0]
+
+    # We need to flush the db here so that annotation.created and
+    # annotation.updated get created.
+    request.db.flush()
+    return sharedannotation
 
 def create_annotation(request, data):
     """
@@ -435,11 +521,34 @@ def delete_url(session, id_):
     """
     session.query(hmod.Page).filter_by(id=id_).delete()
 
+
+def fetch_shared_urls(session,userid):
+    """
+    Fetch the annotation with the given id.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param id_: the annotation ID
+    :type id_: str
+
+    :returns: the annotation, if found, or None.
+    :rtype: memex.models.Annotation, NoneType
+    """
+    print "++++++++in fetch_url function+++++   "
+    val = session.query(hmod.Sharedpage).filter(hmod.Sharedpage.userid==userid).all()
+    print val
+    return val
+
+
 def get_user_by_email(session,email):
     val = session.query(hmod.User).filter(hmod.User.email==email).all()
     print val
     return val
 
+def fetch_title_by_uriaddress(target_uri,userid,session):
+    val = session.query(hmod.Page).filter(hmod.Page.uriaddress==target_uri).filter(hmod.Page.userid==userid).all()
+    return val
 def expand_uri(session, uri):
     """
     Return all URIs which refer to the same underlying document as `uri`.

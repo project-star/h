@@ -42,7 +42,6 @@ class Sharedpage(Base):
                    primary_key=True)
     #: Username as chosen by the user on registration
     uriaddress = sa.Column( sa.UnicodeText(), nullable=False)
-    sharingid = sa.Column( sa.UnicodeText(), nullable=False)
 
     #: The display name which will be used when rendering an annotation.
     title = sa.Column(sa.UnicodeText())

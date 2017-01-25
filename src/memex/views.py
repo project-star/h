@@ -25,8 +25,10 @@ from memex import cors
 from memex import models
 from memex.events import AnnotationEvent
 from memex.presenters import AnnotationJSONPresenter
+from memex.presenters import AnnotationSharedJSONPresenter
 from memex.renotedpresenters import UrlJSONPresenter
 from memex.renotedpresenters import SimpleUrlJSONPresenter
+from memex.renotedpresenters import SimpleSharedUrlJSONPresenter
 from memex.renotedpresenters import SimpleSharingJSONPresenter
 from memex.presenters import AnnotationJSONLDPresenter
 from memex import search as search_lib
@@ -134,6 +136,11 @@ def index(context, request):
                     'method': 'POST',
                     'url': request.route_url('api.sharings'),
                     'desc': "Create new sharings"
+                },
+               'read': {
+                    'method': 'GET',
+                    'url': request.route_url('api.sharings'),
+                    'desc': "Get your shared urls"
                 }
             },
             'search': {
@@ -225,7 +232,8 @@ def createSharing(request):
     sharedtoemail = value["sharedtoemail"]
     print value["annotation_ids"]
     for item in value["annotation_ids"]:
-        result = _createannotationwisesharing(item,sharedtoemail,request)
+        sharedpage = _sharedpage(item,sharedtoemail,request)
+        result = _createannotationwisesharing(item,sharedtoemail,sharedpage.id,request)
         print result
         retvalue["total"] = retvalue["total"] +1 
         sharings.append(result)
@@ -529,6 +537,14 @@ def _present_annotations(request, ids):
     return [AnnotationJSONPresenter(ann, links_service).asdict()
             for ann in annotations]
 
+def _present_sharedannotations(request, uri_id):
+
+    annotations = storage.fetch_ordered_sharedannotations(request.db, uri_id)
+    links_service = request.find_service(name='links')
+    return [AnnotationSharedJSONPresenter(ann, links_service).asdict()
+            for ann in annotations]
+
+
 def _present_annotations_withscore(request, ids, ids_map):
     """Load annotations by id from the database and present them along with their scores obtained from search"""
     def eager_load_documents(query):
@@ -614,19 +630,105 @@ def _renotedread_allannotations(urlid, request):
     return out
 
 
-def _createannotationwisesharing(item,sharedtoemail,request):
+
+@api_config(route_name='api.sharings',
+            request_method='GET',
+            effective_principals=security.Authenticated)
+def readsharedurls(request):
+    """Get the list of annotated urls from the user."""
+    retval = {}
+    userid = request.authenticated_userid
+    sharedpages = storage.fetch_shared_urls(request.db,userid)
+    retval["total"] = len(sharedpages)
+    retval["urllist"] = []
+    for item in sharedpages:
+        urlstruct=SimpleSharedUrlJSONPresenter(item)
+        urlstruct_ret=urlstruct.asdict()
+        urlstruct_ret["allannotation"] = _present_sharedannotations(request, item.id)
+        urlstruct_ret["annotation"] = []
+        if (len(urlstruct_ret["allannotation"])>0):
+            urlstruct_ret["annotation"].append(urlstruct_ret["allannotation"][0])
+        retval["urllist"].append(urlstruct_ret)
+
+    return retval    
+
+
+
+
+
+
+def _createannotationwisesharing(item,sharedtoemail,sharedpageid,request):
     data= {}
-    data["sharedtousername"] = storage.get_user_by_email(request.db,sharedtoemail)[0].username
+    data["sharedtousername"] = _getsharedtouser(request,sharedtoemail)[0].username
     data["sharedtoemail"] = sharedtoemail
     data["sharedbyuserid"] = request.authenticated_userid
     data["annotationid"] = item
+    data["uri_id"] = sharedpageid
     sharing = storage.create_sharing(request, data)
+    sharedannotation = _createsharedannotationentry(item,sharedtoemail,sharedpageid,sharing.id,request)
+    if (sharedannotation.id):
+        presenter = SimpleSharingJSONPresenter(sharing)
+        return presenter.asdict()
+    else:
+        return "failure"
 
-    presenter = SimpleSharingJSONPresenter(sharing)
-    return presenter.asdict()
+def _sharedpage(item,sharedtoemail,request):
+    data={}
+    sharedtouser = _getsharedtouser(request,sharedtoemail)
+    sharedtousername = sharedtouser[0].username
+    sharedtoauthority = sharedtouser[0].authority
+    data["userid"] = "acct:"+sharedtousername+"@"+sharedtoauthority
+    annotation = _getannotation(request, item)
+    data["title"] = _getmainuri(request,annotation.target_uri)[0].title
+    urischema=schemas.CreateSharedURI(request)
+    uriappstruct = urischema.validate(data,annotation)
+    shareduri = storage.create_shareduri(request, uriappstruct)
+    return shareduri
+
+def _getannotation(request, annotationid):
+    annotation = storage.fetch_annotation(request.db, annotationid)
+    if annotation is None:
+        raise KeyError()
+    return annotation
+
+def _getsharedtouser(request,sharedtoemail):
+    user = storage.get_user_by_email(request.db,sharedtoemail)
+    return user
+
+def _getmainuri(request,target_uri):
+    sharedbyuserid = request.authenticated_userid
+    mainuri = storage.fetch_title_by_uriaddress(target_uri,sharedbyuserid,request.db)
+    return mainuri
 
 
-
+def _createsharedannotationentry(item,sharedtoemail,sharedpageid,sharingid,request):
+    data = {}
+    sharedtouser = _getsharedtouser(request,sharedtoemail)
+    sharedtousername = sharedtouser[0].username
+    sharedtoauthority = sharedtouser[0].authority
+    data["userid"] = "acct:"+sharedtousername+"@"+sharedtoauthority
+    data["sharedbyuserid"] = request.authenticated_userid
+    data["uri_id"] = sharedpageid
+    annotation = _getannotation(request, item)
+    data["title"] = _getmainuri(request,annotation.target_uri)[0].title
+    data["sharingid"] = sharingid
+    if ('viddata' in annotation.extra):
+        data["type"] = 'video'
+    elif ('auddata' in annotation.extra):
+        data["type"] = 'audio'
+    else:
+        data["type"] = 'text'
+    data["text"] = annotation.text
+    data["text_rendered"] = annotation.text_rendered
+    data["tags"] = []
+    data["target_selectors"] = annotation.target_selectors
+    data["target_uri"] = annotation.target_uri
+    data["target_uri_normalized"] =annotation.target_uri_normalized
+    data["extra"] = annotation.extra
+    print data
+    sharedannotation = storage.create_sharedannotation(request, data)
+    return sharedannotation
+  
 def get_db():
     client = MongoClient('0.0.0.0:27017')
     db = client.renoted

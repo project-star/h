@@ -51,6 +51,53 @@ class AnnotationBasePresenter(object):
         return [target]
 
 
+class AnnotationSharedJSONPresenter(AnnotationBasePresenter):
+
+    """Present an annotation in the JSON format returned by API requests."""
+
+    def asdict(self,*args):
+#        docpresenter = DocumentJSONPresenter(self.annotation.document)
+        if (len(args) == 1):
+            ids_map=args[0]
+        else:
+            ids_map={}
+        if self.annotation.id in ids_map:
+            relevance=ids_map[self.annotation.id]
+        else:
+            relevance=0.0
+        document = {}
+        document["title"] = []
+        document["title"].append(self.annotation.title)
+        base = {
+            'id': self.annotation.id,
+            'created': self.created,
+            'updated': self.updated,
+            'user': self.annotation.userid,
+            'sharedbyuser': self.annotation.sharedbyuserid,
+            'uri': self.annotation.target_uri,
+            'text': self.text,
+            'tags': self.tags,
+            'group': '__world__',
+            'permissions': self.permissions,
+            'target': self.target,
+            'document': document,
+            'links': self.links,
+            'title': self.annotation.title,
+            'relevance': relevance,
+            'type': self.annotation.type,
+            'uri_id':self.annotation.uri_id
+        }
+
+        annotation = copy.copy(self.annotation.extra) or {}
+        annotation.update(base)
+
+        return annotation
+
+    @property
+    def permissions(self):
+        return _permissions(self.annotation)
+
+
 class AnnotationJSONPresenter(AnnotationBasePresenter):
 
     """Present an annotation in the JSON format returned by API requests."""
@@ -94,7 +141,7 @@ class AnnotationJSONPresenter(AnnotationBasePresenter):
         annotation.update(base)
 
         return annotation
-
+        
     @property
     def permissions(self):
         return _permissions(self.annotation)

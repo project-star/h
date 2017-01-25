@@ -65,9 +65,9 @@ class Sharedannotation(Base):
                        index=True)
 
     #: The textual body of the annotation.
-    _text = sa.Column('text', sa.UnicodeText)
+    text = sa.Column(sa.UnicodeText)
     #: The Markdown-rendered and HTML-sanitized textual body of the annotation.
-    _text_rendered = sa.Column('text_rendered', sa.UnicodeText)
+    text_rendered = sa.Column(sa.UnicodeText)
     #: The tags associated with the annotation.
     tags = sa.Column(
         types.MutableList.as_mutable(
@@ -82,9 +82,9 @@ class Sharedannotation(Base):
                        server_default=sa.sql.expression.false())
 
     #: The URI of the annotated page, as provided by the client.
-    _target_uri = sa.Column('target_uri', sa.UnicodeText)
+    target_uri = sa.Column(sa.UnicodeText)
     #: The URI of the annotated page in normalized form.
-    _target_uri_normalized = sa.Column('target_uri_normalized', sa.UnicodeText)
+    target_uri_normalized = sa.Column(sa.UnicodeText)
     #: The serialized selectors for the annotation on the annotated page.
     target_selectors = sa.Column(types.AnnotationSelectorJSONB,
                                  default=list,
@@ -108,32 +108,6 @@ class Sharedannotation(Base):
                       server_default=sa.func.jsonb('{}'),
                       nullable=False)
 
-
-    @hybrid_property
-    def target_uri(self):
-        return self._target_uri
-
-    @target_uri.setter
-    def target_uri(self, value):
-        self._target_uri = value
-        self._target_uri_normalized = uri.normalize(value)
-
-    @hybrid_property
-    def target_uri_normalized(self):
-        return self._target_uri_normalized
-
-    @hybrid_property
-    def text(self):
-        return self._text
-
-    @text.setter
-    def text(self, value):
-        self._text = value
-        self._text_rendered = markdown.render(value)
-
-    @hybrid_property
-    def text_rendered(self):
-        return self._text_rendered
 
 
     def __acl__(self):
