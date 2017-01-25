@@ -509,7 +509,7 @@ def _max_relevance_perurl(annotationlist):
          max_score=max(max_score,item['relevance'])
     return max_score
             
-def _sort_annotations(annotationlist):
+def _sort_annotations_old(annotationlist):
     returnedannotationlist =[]
     unsorted=[]
     sortedval=[]
@@ -521,10 +521,10 @@ def _sort_annotations(annotationlist):
             print ('viddata' in item)
             if ('viddata' in item):
                 unsortedat["id"]=item["id"]
-                unsortedat["start"]=item["viddata"][0]["starttime"]
+                unsortedat["start"]=float(item["viddata"][0]["starttime"])
             elif ('auddata' in item):
                 unsortedat["id"]=item["id"]
-                unsortedat["start"]=item["auddata"][0]["starttime"]
+                unsortedat["start"]=float(item["auddata"][0]["starttime"])
             else:
                 unsortedat["id"]=item["id"]
                 unsortedat["start"] = 0
@@ -535,6 +535,9 @@ def _sort_annotations(annotationlist):
                 if selectors["type"]=="TextPositionSelector":
                     unsortedat["id"]=item["id"]
                     unsortedat["start"]=selectors["start"]
+                else:
+                    unsortedat["id"] = item["id"]
+                    unsortedat["start"]=0
                
         unsorted.append(unsortedat)
     print unsorted
@@ -546,6 +549,43 @@ def _sort_annotations(annotationlist):
                 returnedannotationlist.append(item1)    
     return returnedannotationlist
 
+
+def _sort_annotations(annotationlist):
+    returnedannotationlist =[]
+    unsorted=[]
+    sortedval=[]
+    for item in annotationlist:
+        print item
+        unsortedat={}
+        unsortedat["id"] = item["id"]
+        unsortedat["start"]=0
+        if ('viddata' in item):
+            print "+++ this is a video annotated url+++"
+            unsortedat["id"]=item["id"]
+            unsortedat["start"]=float(item["viddata"][0]["starttime"])
+        elif ('auddata' in item):
+            print "+++ this is an audio annotated url+++"
+            unsortedat["id"]=item["id"]
+            unsortedat["start"]=float(item["auddata"][0]["starttime"])
+        elif ('selector' in item["target"][0]): 
+            for selectors in item["target"][0]["selector"]:
+                if selectors["type"]=="TextPositionSelector":
+                    print "+++ this is a text annotated url+++"
+                    unsortedat["id"]=item["id"]
+                    unsortedat["start"]=selectors["start"]
+        else:
+            unsortedat["id"] = item["id"]
+            unsortedat["start"]=0
+               
+        unsorted.append(unsortedat)
+    print unsorted
+    sortedval = sorted(unsorted, key=lambda k: k['start'])
+    print sortedval
+    for item in sortedval:
+        for item1 in annotationlist:
+            if (item1["id"] == item["id"]):
+                returnedannotationlist.append(item1)    
+    return returnedannotationlist
 
 def _publish_annotation_event(request,
                               annotation,
