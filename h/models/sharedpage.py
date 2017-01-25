@@ -23,27 +23,36 @@ PASSWORD_MIN_LENGTH = 2
 
 
 
-class Sharing(Base):
-    __tablename__ = 'sharing'
+class Sharedpage(Base):
+    __tablename__ = 'sharedpage'
  
+    __table_args__ = (
+        # Tags are stored in an array-type column, and indexed using a
+        # generalised inverted index. For more information on the use of GIN
+        # indices for array columns, see:
+        #
+        #   http://www.databasesoup.com/2015/01/tag-all-things.html
+        #   http://www.postgresql.org/docs/9.5/static/gin-intro.html
+        #
+        sa.Index('ix__sharedpage_tags', 'tags', postgresql_using='gin'),
+    )
+
     id = sa.Column(types.URLSafeUUID,
                    server_default=sa.func.uuid_generate_v1mc(),
                    primary_key=True)
+    #: Username as chosen by the user on registration
+    uriaddress = sa.Column( sa.UnicodeText(), nullable=False)
+    sharingid = sa.Column( sa.UnicodeText(), nullable=False)
 
-    annotationid = sa.Column(types.URLSafeUUID,
-                             nullable=False)
-    sharedtousername = sa.Column(sa.UnicodeText,
-                       nullable=False,
-                       index=True)
-    sharedbyuserid = sa.Column(sa.UnicodeText,
-                       nullable=False,
-                       index=True)
+    #: The display name which will be used when rendering an annotation.
+    title = sa.Column(sa.UnicodeText())
 
-    uri_id = sa.Column(sa.UnicodeText,
+    #: A short user description/bio
+    description = sa.Column(sa.UnicodeText())
+
+    userid = sa.Column(sa.UnicodeText,
                        nullable=False,
                        index=True)
-    sharedtoemail = sa.Column(sa.UnicodeText(), nullable=False) 
-    
 
     created = sa.Column(sa.DateTime,
                         default=datetime.datetime.utcnow,
@@ -56,12 +65,24 @@ class Sharing(Base):
                         default=datetime.datetime.utcnow,
                         nullable=False)
     #: Is this uri a bookmark?
-    isshared = sa.Column(sa.Boolean,
-                      default=True,
+    isbookmark = sa.Column(sa.Boolean,
+                      default=False,
+                      nullable=False)
+    numbershared = sa.Column(sa.Integer,
+                      default=0,
                       nullable=False)
 
+    isdeleted = sa.Column(sa.Boolean,
+                      default=False,
+                      nullable=False)
+    
+    
     
 
+    #: The tags associated with the annotation.
+    tags = sa.Column(
+        types.MutableList.as_mutable(
+            pg.ARRAY(sa.UnicodeText, zero_indexes=True)))
     def __acl__(self):
         """Return a Pyramid ACL for this annotation."""
         acl = []
@@ -75,5 +96,5 @@ class Sharing(Base):
 
         return acl
     def __repr__(self):
-        return '<Sharing %s>' % self.id
+        return '<Sharedpagedata %s>' % self.id
     

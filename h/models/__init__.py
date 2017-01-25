@@ -35,6 +35,8 @@ from h.models.page import Page
 from h.models.invitation import Invitation
 from h.models.invite import Invite
 from h.models.sharing import Sharing
+from h.models.sharedannotation import Sharedannotation
+from h.models.sharedpage import Sharedpage
 __all__ = (
     'Activation',
     'Annotation',
@@ -49,6 +51,8 @@ __all__ = (
     'Invitation',
     'Invite',
     'Sharing',
+    'Sharedannotation',
+    'Sharedpage',
     'Subscriptions',
     'Token',
     'User',
