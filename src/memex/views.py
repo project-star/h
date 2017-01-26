@@ -684,7 +684,7 @@ def readsharedurls(request):
     for item in sharedpages:
         urlstruct=SimpleSharedUrlJSONPresenter(item)
         urlstruct_ret=urlstruct.asdict()
-        urlstruct_ret["allannotation"] = _present_sharedannotations(request, item.id)
+        urlstruct_ret["allannotation"] = _sort_annotations(_present_sharedannotations(request, item.id))
         urlstruct_ret["annotation"] = []
         if (len(urlstruct_ret["allannotation"])>0):
             urlstruct_ret["annotation"].append(urlstruct_ret["allannotation"][0])
