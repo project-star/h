@@ -760,7 +760,7 @@ def _createsharedannotationentry(item,sharedtoemail,sharedpageid,sharingid,reque
         data["type"] = 'text'
     data["text"] = annotation.text
     data["text_rendered"] = annotation.text_rendered
-    data["tags"] = []
+    data["tags"] = annotation.tags
     data["target_selectors"] = annotation.target_selectors
     data["target_uri"] = annotation.target_uri
     data["target_uri_normalized"] =annotation.target_uri_normalized

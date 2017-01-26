@@ -261,6 +261,7 @@ def create_sharing(request, data):
     if (count < 1):
         request.db.add(sharing)
     else:
+        request.db.query(hmod.Sharing).filter(hmod.Sharing.sharedtoemail==data["sharedtoemail"]).filter(hmod.Sharing.annotationid==data["annotationid"]).update({hmod.Sharing.updated:datetime.utcnow()})
         sharing = request.db.query(hmod.Sharing).filter(hmod.Sharing.sharedtoemail==data["sharedtoemail"]).filter(hmod.Sharing.annotationid==data["annotationid"]).all()[0]
 
     # We need to flush the db here so that annotation.created and
@@ -289,8 +290,11 @@ def create_sharedannotation(request, data):
     if (count < 1):
         request.db.add(sharedannotation)
     else:
-        sharedannotation = request.db.query(hmod.Sharedannotation).filter(hmod.Sharedannotation.sharingid==data["sharingid"]).all()[0]
-
+        sharedannotation=request.db.query(hmod.Sharedannotation).filter(hmod.Sharedannotation.sharingid==data["sharingid"]).all()[0]
+        sharedannotation.updated = datetime.utcnow()
+        for key, value in data.items():
+            setattr(sharedannotation, key, value)
+        
     # We need to flush the db here so that annotation.created and
     # annotation.updated get created.
     request.db.flush()
