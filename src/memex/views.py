@@ -229,7 +229,15 @@ def createSharing(request):
     retvalue={}
     retvalue["total"]=0
     sharings=[]
-    sharedtoemail = value["sharedtoemail"]
+    sharedtousername = value["sharedtoemail"]
+    sharedtouser = storage.get_user_by_username(request.db,sharedtousername)
+    if len(sharedtouser) ==0:
+        retvalue["status"] = 'failure'
+        retvalue["reason"] = 'Invalid User Id'
+        return retvalue
+    else:
+        sharedtoemail = sharedtouser[0].email
+        retvalue["status"] = 'success'
     print value["annotation_ids"]
     for item in value["annotation_ids"]:
         sharedpage = _sharedpage(item,sharedtoemail,request)

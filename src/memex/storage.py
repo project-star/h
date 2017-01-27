@@ -549,6 +549,10 @@ def get_user_by_email(session,email):
     val = session.query(hmod.User).filter(hmod.User.email==email).all()
     print val
     return val
+def get_user_by_username(session,username):
+    val = session.query(hmod.User).filter(hmod.User.username==username).all()
+    print val
+    return val
 
 def fetch_title_by_uriaddress(target_uri,userid,session):
     val = session.query(hmod.Page).filter(hmod.Page.uriaddress==target_uri).filter(hmod.Page.userid==userid).all()
