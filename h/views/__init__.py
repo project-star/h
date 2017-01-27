@@ -32,6 +32,7 @@ def includeme(config):
     config.add_route('session', '/app')
     config.add_route('stream', '/renote')
     config.add_route('renote', '/renote')
+    config.add_route('shared', '/shared')
     config.add_route('showannotation', '/showannotation')
     config.add_route('stream.user_query', '/u/{user}')
     config.add_route('stream.tag_query', '/t/{tag}')

@@ -78,7 +78,16 @@ def renote(context, request):
             {'rel': 'alternate', 'href': rss, 'type': 'application/rss+xml'},
         ]
     })
-
+@view_config(route_name='shared')
+def shared(context, request):
+    atom = request.route_url('stream_atom')
+    rss = request.route_url('stream_rss')
+    return render_app(request, {
+        'link_tags': [
+            {'rel': 'alternate', 'href': atom, 'type': 'application/atom+xml'},
+            {'rel': 'alternate', 'href': rss, 'type': 'application/rss+xml'},
+        ]
+    })
 
 @view_config(route_name='showannotation')
 def showrenotedannotation(context, request):
