@@ -85,7 +85,8 @@ class AnnotationSharedJSONPresenter(AnnotationBasePresenter):
             'title': self.annotation.title,
             'relevance': relevance,
             'type': self.annotation.type,
-            'uri_id':self.annotation.uri_id
+            'uri_id':self.annotation.uri_id,
+            'sharingid': self.annotation.sharingid
         }
 
         annotation = copy.copy(self.annotation.extra) or {}
@@ -197,6 +198,57 @@ class AnnotationSearchIndexPresenter(AnnotationBasePresenter):
     def permissions(self):
         return _permissions(self.annotation)
 
+class AnnotationSharedSearchIndexPresenter(AnnotationBasePresenter):
+
+    """Present an annotation in the JSON format returned by API requests."""
+    def __init__(self, annotation):
+        self.annotation = annotation
+
+    def asdict(self,*args):
+#        docpresenter = DocumentJSONPresenter(self.annotation.document)
+        if (len(args) == 1):
+            ids_map=args[0]
+        else:
+            ids_map={}
+        if self.annotation.id in ids_map:
+            relevance=ids_map[self.annotation.id]
+        else:
+            relevance=0.0
+        document = {}
+        document["title"] = []
+        document["title"].append(self.annotation.title)
+        print self.annotation
+        base = {
+            'id': self.annotation.id,
+            'created': self.created,
+            'updated': self.updated,
+            'user': self.annotation.userid,
+            'sharedbyuser': self.annotation.sharedbyuserid,
+            'uri': self.annotation.target_uri,
+            'text': self.text,
+            'tags': self.tags,
+            'group': '__world__',
+            'permissions': self.permissions,
+            'target': self.target,
+            'document': document,
+            'title': self.annotation.title,
+            'type': self.annotation.type,
+            'uri_id':self.annotation.uri_id
+        }
+        print base
+        annotation = copy.copy(self.annotation.extra) or {}
+        annotation.update(base)
+
+        return annotation
+    @property
+    def links(self):
+        # The search index presenter has no need to generate links, and so the
+        # `links_service` parameter has been removed from the constructor.
+        raise NotImplementedError("search index presenter doesn't have links")
+
+    @property
+    def permissions(self):
+        return _permissions(self.annotation)
 
 class AnnotationJSONLDPresenter(AnnotationBasePresenter):
 

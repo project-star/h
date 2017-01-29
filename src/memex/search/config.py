@@ -115,6 +115,105 @@ ANNOTATION_MAPPING = {
     }
 }
 
+SHAREDANNOTATION_MAPPING = {
+    '_id': {'path': 'id'},
+    '_source': {'excludes': ['id']},
+    'analyzer': 'keyword',
+    'properties': {
+        'annotator_schema_version': {'type': 'string'},
+        'created': {'type': 'date'},
+        'updated': {'type': 'date'},
+        'quote': {'type': 'string', 'analyzer': 'uni_normalizer'},
+        'tags': {'type': 'string', 'analyzer': 'uni_normalizer'},
+        'uri_id': {'type': 'string', 'analyzer': 'uni_normalizer'},
+        'text': {'type': 'string', 'analyzer': 'uni_normalizer'},
+        'title': {'type': 'string', 'analyzer': 'uni_normalizer'},
+        'type': {'type': 'string', 'analyzer': 'uni_normalizer'},
+        'deleted': {'type': 'boolean'},
+        'uri': {
+            'type': 'string',
+            'index_analyzer': 'uri',
+            'search_analyzer': 'uri',
+            'fields': {
+                'parts': {
+                    'type': 'string',
+                    'index_analyzer': 'uri_parts',
+                    'search_analyzer': 'uri_parts',
+                },
+            },
+        },
+        'user': {'type': 'string', 'index': 'analyzed', 'analyzer': 'user'},
+        'sharedbyuser': {'type': 'string', 'index': 'analyzed', 'analyzer': 'user'},
+        'target': {
+            'properties': {
+                'source': {
+                    'type': 'string',
+                    'index_analyzer': 'uri',
+                    'search_analyzer': 'uri',
+                    'copy_to': ['uri'],
+                },
+                # We store the 'scope' unanalyzed and only do term filters
+                # against this field.
+                'scope': {
+                    'type': 'string',
+                    'index': 'not_analyzed',
+                },
+                'selector': {
+                    'properties': {
+                        'type': {'type': 'string', 'index': 'no'},
+
+                        # Annotator XPath+offset selector
+                        'startContainer': {'type': 'string', 'index': 'no'},
+                        'startOffset': {'type': 'long', 'index': 'no'},
+                        'endContainer': {'type': 'string', 'index': 'no'},
+                        'endOffset': {'type': 'long', 'index': 'no'},
+
+                        # Open Annotation TextQuoteSelector
+                        'exact': {
+                            'path': 'just_name',
+                            'type': 'string',
+                            'fields': {
+                                'quote': {
+                                    'type': 'string',
+                                    'analyzer': 'uni_normalizer',
+                                },
+                            },
+                        },
+                        'prefix': {'type': 'string'},
+                        'suffix': {'type': 'string'},
+
+                        # Open Annotation (Data|Text)PositionSelector
+                        'start': {'type': 'long'},
+                        'end':   {'type': 'long'},
+                    }
+                }
+            }
+        },
+        'permissions': {
+            'index_name': 'permission',
+            'properties': {
+                'read': {'type': 'string'},
+                'update': {'type': 'string'},
+                'delete': {'type': 'string'},
+                'admin': {'type': 'string'}
+            }
+        },
+        'document': {
+            'properties': {
+                'web_uri': {'type': 'string'},
+                'title': {'type': 'string','analyzer':'standard'}  
+         }
+        },
+        'thread': {
+            'type': 'string',
+            'analyzer': 'thread'
+        },
+        'group': {
+            'type': 'string',
+        }
+    }
+}
+
 ANNOTATION_ANALYSIS = {
     'char_filter': {
         'strip_scheme': {
@@ -172,6 +271,7 @@ ANNOTATION_ANALYSIS = {
     }
 }
 
+SHAREDANNOTATION_ANALYSIS = {}
 DOCUMENT_MAPPING = {
     '_id': {'path': 'id'},
     '_source': {'excludes': ['id']},
@@ -222,6 +322,11 @@ def configure_index(client, index=None):
                    client.t.annotation,
                    ANNOTATION_MAPPING,
                    ANNOTATION_ANALYSIS)
+    _append_config(mappings,
+                   analysis,
+                   client.t.sharedannotation,
+                   SHAREDANNOTATION_MAPPING,
+                   SHAREDANNOTATION_ANALYSIS)
     _append_config(mappings,
                    analysis,
                    client.t.document,

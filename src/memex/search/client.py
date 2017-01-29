@@ -19,6 +19,7 @@ class Client(object):
         """Document types"""
         annotation = 'annotation'
         document = 'document'
+        sharedannotation = 'sharedannotation'
 
     def __init__(self, host, index, **kwargs):
         self.index = index

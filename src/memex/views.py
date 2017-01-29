@@ -106,6 +106,12 @@ def index(context, request):
                             .replace('123', ':id')
     urlupdate_url = request.route_url('api.urlupdate', id='123')\
                             .replace('123', ':id')
+    sharingannot_url = request.route_url('api.sharedannotation', id='123')\
+                            .replace('123', ':id')
+    sharing_url = request.route_url('api.sharedurl', id='123')\
+                            .replace('123', ':id')    
+
+
     return {
         'message': "Annotator Store API",
         'links': {
@@ -141,6 +147,16 @@ def index(context, request):
                     'method': 'GET',
                     'url': request.route_url('api.sharings'),
                     'desc': "Get your shared urls"
+                },
+               'urldelete': {
+                     'method': 'DELETE',
+                     'url': sharing_url,
+                     'desc': "Delete a sharedurl"
+                },
+                'annotdelete': {
+                     'method': 'DELETE',
+                     'url': sharingannot_url,
+                     'desc': "Delete a sharedannotation"
                 }
             },
             'search': {
@@ -484,6 +500,27 @@ def delete(annotation, request):
     return {'id': annotation.id, 'deleted': True}
 
 
+@api_config(route_name='api.sharedannotation',
+            request_method='DELETE',
+            permission='delete')
+def shareddelete(annotation, request):
+    """Delete the specified annotation."""
+    uri = storage.update_shareduri(request.db, annotation)
+    storage.delete_sharedannotation(request.db, annotation.id)
+    storage.delete_sharing(request.db, annotation.sharingid)
+    # N.B. We publish the original model (including all the original annotation
+    # fields) so that queue subscribers have context needed to decide how to
+    # process the delete event. For example, the streamer needs to know the
+    # target URLs of the deleted annotation in order to know which clients to
+    # forward the delete event to.
+    _publish_annotation_event(
+        request,
+        annotation,
+        'shareddelete')
+
+    return {'id': annotation.id, 'deleted': True}
+
+
 @api_config(route_name='api.urlupdate',
             request_method='DELETE',
             permission='delete')
@@ -519,6 +556,40 @@ def urldelete(url, request):
 
     return {'id': url.id, 'deleted': True}
 
+@api_config(route_name='api.sharedurl',
+            request_method='DELETE',
+            permission='delete')
+def sharedurldelete(url, request):
+    """Delete the specified annotation."""
+    params=MultiDict([(u'uri_id', url.id)])
+    print params
+    result = search_lib.Sharedsearch(request) \
+        .run(params)
+    out = {
+            'total': result.total,
+            'rows': _present_sharedannotations_withscore(request, result.annotation_ids,result.annotation_ids_map)
+        }
+
+    for item in out["rows"]:
+        print item
+        print item["id"]
+        storage.delete_sharedannotation(request.db, item["id"])
+        storage.delete_sharing(request.db, item["sharingid"])
+        event = AnnotationEvent(request, item["id"], 'shareddelete', item)
+        request.notify_after_commit(event)
+    storage.delete_sharedurl(request.db, url.id)
+
+    # N.B. We publish the original model (including all the original annotation
+    # fields) so that queue subscribers have context needed to decide how to
+    # process the delete event. For example, the streamer needs to know the
+    # target URLs of the deleted annotation in order to know which clients to
+    # forward the delete event to.
+   # _publish_annotation_event(
+   #     request,
+   #     annotation,
+   #     'delete')
+
+    return {'id': url.id, 'deleted': True}
 
 
 def _json_payload(request):
@@ -564,6 +635,15 @@ def _present_annotations_withscore(request, ids, ids_map):
     links_service = request.find_service(name='links')
     return [AnnotationJSONPresenter(ann, links_service).asdict(ids_map)
             for ann in annotations]
+
+def _present_sharedannotations_withscore(request, ids, ids_map):
+    """Load annotations by id from the database and present them along with their scores obtained from search"""
+
+    annotations = storage.fetch_sharedordered_annotations(request.db, ids)
+    links_service = request.find_service(name='links')
+    return [AnnotationSharedJSONPresenter(ann, links_service).asdict(ids_map)
+            for ann in annotations]
+
 
 def _max_relevance_perurl(annotationlist):
     max_score=0.0
@@ -660,6 +740,8 @@ def _publish_annotation_event(request,
         annotation_dict = presenter.asdict()
 
     event = AnnotationEvent(request, annotation.id, action, annotation_dict)
+    print event.annotation_id
+    print event.action
     request.notify_after_commit(event)
 
 
@@ -677,28 +759,101 @@ def _renotedread_allannotations(urlid, request):
 
     return out
 
+def _renotedread_allsharedannotations(urlid, request):
+    """Return the annotation (simply how it was stored in the database)."""
+    params=MultiDict([(u'uri_id', urlid)])
+    print params
+    result = search_lib.Sharedsearch(request) \
+        .run(params)
 
+    out = {
+        'total': result.total,
+        'annotations': _sort_annotations(_present_sharedannotations_withscore(request, result.annotation_ids, result.annotation_ids_map))
+    }
+
+    return out
 
 @api_config(route_name='api.sharings',
             request_method='GET',
             effective_principals=security.Authenticated)
 def readsharedurls(request):
     """Get the list of annotated urls from the user."""
-    retval = {}
-    userid = request.authenticated_userid
-    sharedpages = storage.fetch_shared_urls(request.db,userid)
-    retval["total"] = len(sharedpages)
-    retval["urllist"] = []
-    for item in sharedpages:
-        urlstruct=SimpleSharedUrlJSONPresenter(item)
-        urlstruct_ret=urlstruct.asdict()
-        urlstruct_ret["allannotation"] = _sort_annotations(_present_sharedannotations(request, item.id))
-        urlstruct_ret["annotation"] = []
-        if (len(urlstruct_ret["allannotation"])>0):
-            urlstruct_ret["annotation"].append(urlstruct_ret["allannotation"][0])
-        retval["urllist"].append(urlstruct_ret)
+    params = request.params.copy()
+    valueparams = request.params.copy()
+    print ("+++ in urls params ++++")
+    print params
+    type = valueparams.pop('type','all')
+    print type 
+    print (type == 'all')
+    urllist=[]
+    retval={}
+    if len(params) > 0 and type == 'all':
+        print ("+++params is not none+++")
+        result = search_lib.Sharedsearch(request) \
+        .run(params)
 
-    return retval    
+        out = {
+            'total': result.total,
+            'rows': _sort_annotations(_present_sharedannotations_withscore(request, result.annotation_ids, result.annotation_ids_map))
+        }
+        print out["rows"]
+        preexistingurl_id = []
+        urlwiseannots={}
+        for item in out["rows"]:
+            searchurlid = item["uri_id"]
+            urlsingledata = storage.fetch_sharedurl(request.db,searchurlid)
+            urlstruct=SimpleSharedUrlJSONPresenter(urlsingledata)
+            if searchurlid not in preexistingurl_id:
+                urlwiseannots[str(searchurlid)]=[]
+                urllist.append(urlstruct.asdict())
+                preexistingurl_id.append(searchurlid)
+            urlwiseannots[str(searchurlid)].append(item)
+            print urlwiseannots[searchurlid]
+            print urllist
+            for item1 in urllist:
+                if item1["id"] == searchurlid:
+                    item1["annotation"] = urlwiseannots[str(searchurlid)]
+                    item1["allannotation"] = _renotedread_allsharedannotations(item1["id"],request)["annotations"]
+                    item1["relevance"] = _max_relevance_perurl(item1["annotation"])
+        retval["total"] = len(urllist)
+        retval["urllist"] = urllist
+        return retval
+    elif (type != 'all') and len(params) == 1:
+        print ("+++params is  of type+++")
+        urlsdata = storage.fetch_shared_urls(request.db,request.authenticated_userid)
+        urllist=[]
+        retval={}
+        for item in urlsdata:
+            params=MultiDict([(u'uri_id', item.id),(u'limit', 1),(u'type',type)])
+            result = search_lib.Sharedsearch(request) \
+            .run(params)
+            urlstruct=SimpleSharedUrlJSONPresenter(item)
+            urlstructannot = urlstruct.asdict()
+            urlstructannot["allannotation"] = _renotedread_allsharedannotations(item.id,request)["annotations"]
+            
+            urlstructannot["annotation"] = _present_sharedannotations_withscore(request, result.annotation_ids, result.annotation_ids_map)
+            urlstructannot["relevance"] = _max_relevance_perurl(urlstructannot["annotation"])      
+            if (len(result.annotation_ids) > 0):
+                urllist.append(urlstructannot)
+        retval["total"] = len(urllist)
+        retval["urllist"] = urllist
+        return retval
+    else:
+        retval = {}
+        userid = request.authenticated_userid
+        sharedpages = storage.fetch_shared_urls(request.db,userid)
+        retval["total"] = len(sharedpages)
+        retval["urllist"] = []
+        for item in sharedpages:
+            urlstruct=SimpleSharedUrlJSONPresenter(item)
+            urlstruct_ret=urlstruct.asdict()
+            urlstruct_ret["allannotation"] = _sort_annotations(_present_sharedannotations(request, item.id))
+            urlstruct_ret["annotation"] = []
+            if (len(urlstruct_ret["allannotation"])>0):
+                urlstruct_ret["annotation"].append(urlstruct_ret["allannotation"][0])
+            retval["urllist"].append(urlstruct_ret)
+
+        return retval    
 
 
 
@@ -775,6 +930,7 @@ def _createsharedannotationentry(item,sharedtoemail,sharedpageid,sharingid,reque
     data["extra"] = annotation.extra
     print data
     sharedannotation = storage.create_sharedannotation(request, data)
+    _publish_annotation_event(request, sharedannotation, 'sharedcreate')
     return sharedannotation
   
 def get_db():

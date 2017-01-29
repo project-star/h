@@ -33,3 +33,11 @@ def includeme(config):
                      traverse='/{id}')
     config.add_route('api.search', '/search')
     config.add_route('api.sharings', '/sharing')
+    config.add_route('api.sharedannotation',
+                      '/sharingannots/{id:[A-Za-z0-9_-]{20,22}}',
+                     factory='memex.resources:SharedannotationFactory',
+                     traverse='/{id}')
+    config.add_route('api.sharedurl',
+                      '/sharingurls/{id:[A-Za-z0-9_-]{20,22}}',
+                     factory='memex.resources:SharedURLFactory',
+                     traverse='/{id}')

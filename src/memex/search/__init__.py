@@ -5,10 +5,11 @@ from pyramid.settings import asbool
 from memex.search.client import Client
 from memex.search.config import configure_index
 from memex.search.core import Search
+from memex.search.core import Sharedsearch
 from memex.search.core import FILTERS_KEY
 from memex.search.core import MATCHERS_KEY
 
-__all__ = ('Search',)
+__all__ = ('Search','Sharedsearch',)
 
 
 def _get_client(settings):
@@ -22,7 +23,6 @@ def _get_client(settings):
         kwargs['maxsize'] = settings['es.client_poolsize']
 
     return Client(host, index, **kwargs)
-
 
 def includeme(config):
     settings = config.registry.settings

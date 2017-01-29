@@ -44,6 +44,8 @@ celery.conf.update(
         'h.indexer.add_annotation': 'indexer',
         'h.indexer.delete_annotation': 'indexer',
         'h.indexer.reindex_annotations': 'indexer',
+        'h.indexer.add_sharedannotation': 'indexer',
+        'h.indexer.delete_sharedannotation': 'indexer',
     },
     CELERY_TASK_SERIALIZER='json',
     CELERY_QUEUES=[

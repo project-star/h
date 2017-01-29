@@ -38,6 +38,7 @@ def fetch_annotation(session, id_):
         return session.query(models.Annotation).get(id_)
     except types.InvalidUUID:
         return None
+
 def fetch_url(session, id_):
     """
     Fetch the annotation with the given id.
@@ -51,10 +52,48 @@ def fetch_url(session, id_):
     :returns: the annotation, if found, or None.
     :rtype: memex.models.Annotation, NoneType
     """
+    try:
+        val = session.query(hmod.Page).get(id_)
+        print val
+        return session.query(hmod.Page).get(id_)
+    except types.InvalidUUID:
+        return None
+def fetch_sharedannotation(session, id_):
+    """
+    Fetch the annotation with the given id.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param id_: the annotation ID
+    :type id_: str
+
+    :returns: the annotation, if found, or None.
+    :rtype: memex.models.Annotation, NoneType
+    """
+    try:
+        val = session.query(hmod.Sharedannotation).get(id_)
+        print val
+        return session.query(hmod.Sharedannotation).get(id_)
+    except types.InvalidUUID:
+        return None
+def fetch_sharedurl(session, id_):
+    """
+    Fetch the annotation with the given id.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param id_: the annotation ID
+    :type id_: str
+
+    :returns: the annotation, if found, or None.
+    :rtype: memex.models.Annotation, NoneType
+    """
     print "++++++++in fetch_url function+++++   "
-    val = session.query(hmod.Page).get(id_)
+    val = session.query(hmod.Sharedpage).get(id_)
     print val
-    return session.query(hmod.Page).get(id_)
+    return session.query(hmod.Sharedpage).get(id_)
 
 def fetch_urls(session,userid):
     """
@@ -74,6 +113,26 @@ def fetch_urls(session,userid):
     print val
     return val
 
+
+def fetch_allsharedannotations(session):
+    """
+    Fetch the annotation with the given id.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param id_: the annotation ID
+    :type id_: str
+
+    :returns: the annotation, if found, or None.
+    :rtype: memex.models.Annotation, NoneType
+    """
+    try:
+        val = session.query(hmod.Sharedannotation).all()
+        print val
+        return session.query(hmod.Sharedannotation).all()
+    except types.InvalidUUID:
+        return None
 
 def fetch_uri(session, uriaddress, userid, isbookmark):
     """
@@ -146,6 +205,39 @@ def fetch_ordered_annotations(session, ids, query_processor=None):
     query = session.query(models.Annotation).filter(models.Annotation.id.in_(ids))
     if query_processor:
         query = query_processor(query)
+
+    anns = sorted(query, key=lambda a: ordering.get(a.id))
+    return anns
+
+def fetch_sharedordered_annotations(session, ids):
+    """
+    Fetch all annotations with the given ids and order them based on the list
+    of ids.
+
+    The optional `query_processor` parameter allows for passing in a function
+    that can change the query before it is run, especially useful for
+    eager-loading certain data. The function will get the query as an argument
+    and has to return a query object again.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param ids: the list of annotation ids
+    :type ids: list
+
+    :param query_processor: an optional function that takes the query and
+                            returns an updated query
+    :type query_processor: callable
+
+    :returns: the annotation, if found, or None.
+    :rtype: memex.models.Annotation, NoneType
+    """
+    if not ids:
+        return []
+
+    ordering = {x: i for i, x in enumerate(ids)}
+
+    query = session.query(hmod.Sharedannotation).filter(hmod.Sharedannotation.id.in_(ids))
 
     anns = sorted(query, key=lambda a: ordering.get(a.id))
     return anns
@@ -468,6 +560,35 @@ def update_uri(session, annotation):
     session.flush()
     return "success"
 
+def update_shareduri(session, sharedannotation):
+    """
+    Update an existing annotation and its associated document metadata.
+
+    Update the annotation identified by id_ with the given
+    data. Create, delete and update document metadata as appropriate.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param id_: the ID of the annotation to be updated, this is assumed to be a
+        validated ID of an annotation that does already exist in the database
+    :type id_: string
+
+    :param data: the validated data with which to update the annotation
+    :type data: dict
+
+    :returns: the updated annotation
+    :rtype: memex.models.Annotation
+
+    """
+    # Remove any 'document' field first so that we don't try to save it on the
+    # annotation object.
+    print "+++ in update_uri +++"
+    id_ = sharedannotation.uri_id
+    session.query(hmod.Sharedpage).filter_by(id=id_).update({hmod.Sharedpage.updated:datetime.utcnow()})
+    session.flush()
+    return "success"
+
 def update_URL(session, id_, data):
     """
     Update an existing annotation and its associated document metadata.
@@ -499,6 +620,37 @@ def update_URL(session, id_, data):
         setattr(url, key, value)
     return url
 
+def update_SharedURL(session, id_, data):
+    """
+    Update an existing annotation and its associated document metadata.
+
+    Update the annotation identified by id_ with the given
+    data. Create, delete and update document metadata as appropriate.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param id_: the ID of the annotation to be updated, this is assumed to be a
+        validated ID of an annotation that does already exist in the database
+    :type id_: string
+
+    :param data: the validated data with which to update the annotation
+    :type data: dict
+
+    :returns: the updated annotation
+    :rtype: memex.models.Annotation
+
+    """
+    # Remove any 'document' field first so that we don't try to save it on the
+    # annotation object.
+    url = session.query(hmod.Sharedpage).get(id_)
+    url.updated = datetime.utcnow()
+
+
+    for key, value in data.items():
+        setattr(url, key, value)
+    return url
+
 
 
 def delete_annotation(session, id_):
@@ -513,6 +665,18 @@ def delete_annotation(session, id_):
     """
     session.query(models.Annotation).filter_by(id=id_).delete()
 
+def delete_sharedannotation(session, id_):
+    """
+    Delete the annotation with the given id.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param id_: the annotation ID
+    :type id_: str
+    """
+    session.query(hmod.Sharedannotation).filter_by(id=id_).delete()
+
 def delete_url(session, id_):
     """
     Delete the annotation with the given id.
@@ -525,6 +689,30 @@ def delete_url(session, id_):
     """
     session.query(hmod.Page).filter_by(id=id_).delete()
 
+
+def delete_sharedurl(session, id_):
+    """
+    Delete the annotation with the given id.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param id_: the annotation ID
+    :type id_: str
+    """
+    session.query(hmod.Sharedpage).filter_by(id=id_).delete()
+
+def delete_sharing(session, id_):
+    """
+    Delete the annotation with the given id.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param id_: the annotation ID
+    :type id_: str
+    """
+    session.query(hmod.Sharing).filter_by(id=id_).delete()
 
 def fetch_shared_urls(session,userid):
     """

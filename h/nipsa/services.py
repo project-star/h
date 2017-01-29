@@ -25,9 +25,9 @@ class NipsaService(object):
 
     def is_flagged(self, userid):
         """Return whether the given userid is flagged as "NIPSA"."""
-        cnt = self.session.query(User).filter_by(userid=userid,
-                                                 nipsa=True).count()
-        return cnt != 0
+        #cnt = self.session.query(User).filter_by(userid=userid,
+        #                                         nipsa=True).count()
+        return False
 
     def flag(self, user):
         """

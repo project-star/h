@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 from collections import namedtuple
 import itertools
 import logging
+import time
 from memex._compat import xrange
 import subprocess
 import elasticsearch
@@ -13,6 +14,7 @@ from sqlalchemy.orm import subqueryload
 import os
 from memex import models
 from memex import presenters
+from memex import storage
 from memex.events import AnnotationTransformEvent
 from pymongo import MongoClient
 import json
@@ -55,6 +57,36 @@ def index(es, annotation, request):
     es.conn.index(
         index=es.index,
         doc_type=es.t.annotation,
+        body=annotation_dict,
+        id=annotation_dict["id"],
+    )
+
+def sharedindex(es, sharedannotation, request):
+    """
+    Index a sharedannotation into the search index.
+
+    A new annotation document will be created in the search index or,
+    if the index already contains an annotation document with the same ID as
+    the given annotation then it will be updated.
+
+    :param es: the Elasticsearch client object to use
+    :type es: memex.search.Client
+
+    :param annotation: the annotation to index
+    :type annotation: memex.models.Annotation
+
+    """
+    print "++++ in shared index function ++++"
+    presenter = presenters.AnnotationSharedSearchIndexPresenter(sharedannotation)
+    annotation_dict = presenter.asdict()
+    print "++++ in shared index function ++++"    
+    event = AnnotationTransformEvent(request, annotation_dict)
+    request.registry.notify(event)
+    print "in index function in memex"
+    print (os.getcwd())
+    es.conn.index(
+        index=es.index,
+        doc_type=es.t.sharedannotation,
         body=annotation_dict,
         id=annotation_dict["id"],
     )
@@ -120,6 +152,39 @@ def delete(es, annotation_id):
         log.exception('Tried to delete a nonexistent annotation from the '
                       'search index, annotation id: %s', annotation_id)
 
+def shareddelete(es, annotation_id):
+    """
+    Delete a sharedannotation from the search index.
+
+    If no annotation with the given annotation's ID exists in the search index,
+    just log the resulting elasticsearch exception (don't crash).
+
+    :param es: the Elasticsearch client object to use
+    :type es: memex.search.Client
+
+    :param annotation_id: the annotation id whose corresponding document to
+        delete from the search index
+    :type annotation_id: str
+
+    """
+    try:
+        es.conn.delete(
+            index=es.index,
+            doc_type=es.t.sharedannotation,
+            id=annotation_id,
+        )
+    except elasticsearch.NotFoundError:
+        log.exception('Tried to delete a nonexistent annotation from the '
+                      'search index, annotation id: %s', annotation_id)
+
+
+
+def createsharedindex(session,es,request):
+    sharedannotations = storage.fetch_allsharedannotations(session)
+    for item in sharedannotations:
+        print item 
+        sharedindex(es, item, request)
+        time.sleep(0.2)
 
 def reindex(session, es, request):
     indexing = BatchIndexer(session, es, request)
