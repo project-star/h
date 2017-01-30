@@ -353,7 +353,8 @@ def readannotatedurls(request):
             urlstructannot["allannotation"] = _renotedread_allannotations(item.id,request)["annotations"]
             urlstructannot["annotation"] = _present_annotations_withscore(request, result.annotation_ids, result.annotation_ids_map)
             urlstructannot["relevance"] = _max_relevance_perurl(urlstructannot["annotation"])
-            urllist.append(urlstructannot)
+            if (len(result.annotation_ids) > 0):
+                urllist.append(urlstructannot)
         retval["total"] = len(urllist)
         retval["urllist"] = urllist
         return retval
