@@ -209,7 +209,20 @@ def search(request):
         'total': result.total,
         'rows': _present_annotations_withscore(request, result.annotation_ids, result.annotation_ids_map)
     }
-
+    uri = params.pop('uri','')
+    if uri:
+        uri_id = storage.fetch_title_by_shareduriaddress(uri,request.authenticated_userid,request.db)[0].id
+        params.add("uri_id",uri_id)
+    print params
+        
+    resultshare = search_lib.Sharedsearch(request, separate_replies=separate_replies) \
+        .run(params)
+    print ("+++++ search result as returned by elastic search +++++++")
+    print resultshare
+    outshare = {
+        'total': resultshare.total,
+        'rows': _present_sharedannotations_withscore(request, resultshare.annotation_ids, resultshare.annotation_ids_map)
+    }
     if separate_replies:
         out['replies'] = _present_annotations(request, result.reply_ids)
 
