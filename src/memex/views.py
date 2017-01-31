@@ -211,18 +211,14 @@ def search(request):
     }
     uri = params.pop('uri','')
     if uri:
-        uri_id = storage.fetch_title_by_shareduriaddress(uri,request.authenticated_userid,request.db)[0].id
-        params.add("uri_id",uri_id)
-    print params
-        
-    resultshare = search_lib.Sharedsearch(request, separate_replies=separate_replies) \
-        .run(params)
-    print ("+++++ search result as returned by elastic search +++++++")
-    print resultshare
-    outshare = {
-        'total': resultshare.total,
-        'rows': _present_sharedannotations_withscore(request, resultshare.annotation_ids, resultshare.annotation_ids_map)
-    }
+        uri_id = storage.fetch_title_by_shareduriaddress(uri,request.authenticated_userid,request.db)
+        if len(uri_id)>0:
+            params.add("uri_id",uri_id[0].id)
+            resultshare = search_lib.Sharedsearch(request, separate_replies=separate_replies).run(params)
+            outshare = {
+                'total': resultshare.total,
+                'rows': _present_sharedannotations_withscore(request, resultshare.annotation_ids, resultshare.annotation_ids_map)
+             }
     if separate_replies:
         out['replies'] = _present_annotations(request, result.reply_ids)
 
