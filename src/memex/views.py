@@ -219,10 +219,18 @@ def search(request):
                 'total': resultshare.total,
                 'rows': _present_sharedannotations_withscore(request, resultshare.annotation_ids, resultshare.annotation_ids_map)
              }
+        else:
+            resultshare=False
     if separate_replies:
         out['replies'] = _present_annotations(request, result.reply_ids)
-
-    return out
+    if resultshare:
+        returnout = {
+                 'total': result.total + resultshare.total,
+                 'rows': out["rows"] + outshare["rows"]
+             }
+        return returnout
+    else:   
+        return out
 
 
 @api_config(route_name='api.annotations',

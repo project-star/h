@@ -80,7 +80,9 @@ class Search(object):
                                        _source=False,
                                        body=self.builder.build(params))
         print response
+        total=0
         total = response['hits']['total']
+        annotation_ids_map = {}
         annotation_ids = [hit['_id'] for hit in response['hits']['hits']]
         for itemvar in response['hits']['hits']:
             annotation_ids_map[itemvar['_id']] = itemvar['_score']
@@ -181,6 +183,7 @@ class Sharedsearch(object):
         print response
         total = response['hits']['total']
         annotation_ids = [hit['_id'] for hit in response['hits']['hits']]
+        annotation_ids_map={}
         for itemvar in response['hits']['hits']:
             annotation_ids_map[itemvar['_id']] = itemvar['_score']
         aggregations = self._parse_aggregation_results(response.get('aggregations', None))
