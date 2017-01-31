@@ -742,9 +742,15 @@ def get_user_by_username(session,username):
     print val
     return val
 
+
 def fetch_title_by_uriaddress(target_uri,userid,session):
     val = session.query(hmod.Page).filter(hmod.Page.uriaddress==target_uri).filter(hmod.Page.userid==userid).all()
     return val
+
+def fetch_title_by_shareduriaddress(target_uri,userid,session):
+    val = session.query(hmod.Sharedpage).filter(hmod.Sharedpage.uriaddress==target_uri).filter(hmod.Sharedpage.userid==userid).all()
+    return val
+
 def expand_uri(session, uri):
     """
     Return all URIs which refer to the same underlying document as `uri`.

@@ -209,7 +209,16 @@ def search(request):
         'total': result.total,
         'rows': _present_annotations_withscore(request, result.annotation_ids, result.annotation_ids_map)
     }
-
+    uri = params.pop('uri','')
+    if uri:
+        uri_id = storage.fetch_title_by_shareduriaddress(uri,request.authenticated_userid,request.db)
+        if len(uri_id)>0:
+            params.add("uri_id",uri_id[0].id)
+            resultshare = search_lib.Sharedsearch(request, separate_replies=separate_replies).run(params)
+            outshare = {
+                'total': resultshare.total,
+                'rows': _present_sharedannotations_withscore(request, resultshare.annotation_ids, resultshare.annotation_ids_map)
+             }
     if separate_replies:
         out['replies'] = _present_annotations(request, result.reply_ids)
 
@@ -353,7 +362,8 @@ def readannotatedurls(request):
             urlstructannot["allannotation"] = _renotedread_allannotations(item.id,request)["annotations"]
             urlstructannot["annotation"] = _present_annotations_withscore(request, result.annotation_ids, result.annotation_ids_map)
             urlstructannot["relevance"] = _max_relevance_perurl(urlstructannot["annotation"])
-            urllist.append(urlstructannot)
+            if (len(result.annotation_ids) > 0):
+                urllist.append(urlstructannot)
         retval["total"] = len(urllist)
         retval["urllist"] = urllist
         return retval
