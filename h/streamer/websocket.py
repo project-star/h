@@ -15,7 +15,7 @@ from h.streamer import filter
 log = logging.getLogger(__name__)
 
 # An incoming message from a WebSocket client.
-Message = namedtuple('Message', ['socket', 'payload'])
+Message = namedtuple('Message', ['socket', 'payload','user'])
 
 
 class WebSocket(_WebSocket):
@@ -38,6 +38,8 @@ class WebSocket(_WebSocket):
         self.authenticated_userid = environ['h.ws.authenticated_userid']
         self.effective_principals = environ['h.ws.effective_principals']
         self.registry = environ['h.ws.registry']
+        print "++++in wesocket before figuring userid++++"
+        print self.authenticated_userid
 
         self._work_queue = environ['h.ws.streamer_work_queue']
 
@@ -47,8 +49,11 @@ class WebSocket(_WebSocket):
         return instance
 
     def received_message(self, msg):
+        print "++++msg++++"
+        print msg
+        print self.authenticated_userid
         try:
-            self._work_queue.put(Message(socket=self, payload=msg.data),
+            self._work_queue.put(Message(socket=self, payload=msg.data,user=self.authenticated_userid),
                                  timeout=0.1)
         except Full:
             log.warn('Streamer work queue full! Unable to queue message from '
@@ -80,12 +85,16 @@ def handle_message(message, session=None):
     communication with the database.
     """
     socket = message.socket
-
+    user = message.user
     data = json.loads(message.payload)
-
+    print "+++++in streamer websocket ++++ message received++++"
+    print session
+    print data
+    print user
+   # socket.send("true12345")
     try:
         msg_type = data.get('messageType', 'filter')
-
+        print msg_type
         if msg_type == 'filter':
             payload = data['filter']
 
@@ -99,6 +108,11 @@ def handle_message(message, session=None):
             socket.filter = filter.FilterHandler(payload)
         elif msg_type == 'client_id':
             socket.client_id = data.get('value')
+        elif msg_type == 'metrics_data':
+            user = message.user
+            event = data.get("eventName")
+            _update_metricsdb(session,user,event)
+            print event
     except:
         # TODO: clean this up, catch specific errors, narrow the scope
         log.exception("Parsing filter: %s", data)
@@ -123,3 +137,7 @@ def _expand_uris(session, clause):
         expanded.update(storage.expand_uri(session, item))
 
     clause['value'] = list(expanded)
+
+def _update_metricsdb(session,user,event):
+    if user is not None:
+        storage.updatemetrics(session,user,event)

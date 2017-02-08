@@ -15,10 +15,10 @@ from memex import models
 from h import models as hmod
 from memex.db import types
 from memex.events import AnnotationEvent
+from pymongo import MongoClient
 from memex.presenters import AnnotationJSONPresenter
 _ = i18n.TranslationStringFactory(__package__)
 import time
-
 def fetch_annotation(session, id_):
     """
     Fetch the annotation with the given id.
@@ -795,3 +795,23 @@ def _publish_annotation_event(request,
 
     event = AnnotationEvent(request, annotation.id, action, annotation_dict)
     request.notify_after_commit(event)
+
+
+
+
+def updatemetrics(session,user,event):
+    db = get_db()
+    todaydate=datetime.now().strftime("%Y-%m-%d")
+    count = db.metrics.find( { "user": user, "eventName": event, "date": todaydate} ).count()
+    if count==0:
+        db.metrics.insert({"user": user, "eventName": event, "date": todaydate, "count": 1})
+    else:
+        db.metrics.update({"user": user, "eventName": event, "date": todaydate}, {'$inc': {'count': 1}})
+    return True;
+
+
+
+def get_db():
+    client = MongoClient('0.0.0.0:27017')
+    db = client.renoted
+    return db

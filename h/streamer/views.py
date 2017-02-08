@@ -16,8 +16,11 @@ def websocket_view(request):
     # WebSockets can be opened across origins and send cookies. To prevent
     # scripts on other sites from using this socket, ensure that the Origin
     # header (if present) matches the request host URL or is whitelisted.
+    print request
     origin = request.headers.get('Origin')
     allowed = request.registry.settings['origins']
+    print origin
+    print allowed
     if origin is not None:
         if origin != request.host_url and origin not in allowed:
             return httpexceptions.HTTPForbidden()
@@ -35,6 +38,7 @@ def websocket_view(request):
     request.db.close()
 
     app = WebSocketWSGIApplication(handler_cls=websocket.WebSocket)
+    print app
     return request.get_response(app)
 
 

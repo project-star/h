@@ -68,6 +68,8 @@ def handle_message(message, session, topic_handlers):
     """
     try:
         handler = topic_handlers[message.topic]
+        print "++++topics in message++++"
+        print message
     except KeyError:
         raise RuntimeError("Don't know how to handle message from topic: "
                            "{}".format(message.topic))
@@ -76,6 +78,7 @@ def handle_message(message, session, topic_handlers):
     # to stop connections being added or dropped during iteration, and if that
     # happens Python will throw a "Set changed size during iteration" error.
     sockets = list(websocket.WebSocket.instances)
+    print sockets
     handler(message.payload, sockets, session)
 
 
@@ -101,12 +104,16 @@ def handle_annotation_event(message, sockets, session):
         reply = _generate_annotation_event(message, socket, annotation, user_nipsad)
         if reply is None:
             continue
+        print "+++in reply websocket in annotation event+++"
+        print reply
         socket.send_json(reply)
 
 
 def handle_user_event(message, sockets, _):
     for socket in sockets:
         reply = _generate_user_event(message, socket)
+        print ("+++in handler user  event reply++++")
+        print reply
         if reply is None:
             continue
         socket.send_json(reply)
@@ -123,6 +130,8 @@ def _generate_annotation_event(message, socket, annotation, user_nipsad):
     annotation event, otherwise a dict containing information about the event.
     """
     action = message['action']
+    print ("++++from websocket in generate annotation event++++")
+    print message
 
     if action == 'read':
         return None
@@ -149,7 +158,7 @@ def _generate_annotation_event(message, socket, annotation, user_nipsad):
             return None
 
         base_url = socket.registry.settings.get('h.app_url',
-                                                'http://localhost:5000')
+                                                'https://localhost:5000')
         links_service = LinksService(base_url, socket.registry)
         serialized = presenters.AnnotationJSONPresenter(annotation,
                                                         links_service).asdict()
@@ -181,6 +190,8 @@ def _generate_user_event(message, socket):
     Returns None if the socket should not receive any message about this user
     event, otherwise a dict containing information about the event.
     """
+    print "+++in generate user event+++"
+    print message
     if socket.authenticated_userid != message['userid']:
         return None
 

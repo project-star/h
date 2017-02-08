@@ -61,14 +61,14 @@ def devserver(https, web, ws, worker, assets):
     os.environ['PYTHONUNBUFFERED'] = 'true'
     if https:
         gunicorn_args = '--certfile=.tlscert.pem --keyfile=.tlskey.pem'
-        os.environ['APP_URL'] = 'https://renoted.com'
-        os.environ['WEBSOCKET_URL'] = 'wss://localhost:5001/ws'
+        os.environ['APP_URL'] = 'https://localhost:5000'
+        os.environ['WEBSOCKET_URL'] = 'wss://localhost:5002/ws'
         os.environ['ALLOWED_ORIGINS'] = ' '.join(
-            ['https://renoted.com', os.environ.get('ALLOWED_ORIGINS', '')])
+            ['https://renoted.com', 'https://localhost:5000', 'chrome-extension://icbmnhndepabfapeflmbjpaefeiclpfh'])
     else:
         gunicorn_args = ''
         os.environ['APP_URL'] = 'https://renoted.com'
-        os.environ['WEBSOCKET_URL'] = 'ws://localhost:5001/ws'
+        os.environ['WEBSOCKET_URL'] = 'ws://localhost:5002/ws'
 
     m = Manager()
     if web:
