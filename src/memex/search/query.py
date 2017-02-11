@@ -246,7 +246,7 @@ class AnyMatcher(object):
     def __call__(self, params):
         if "any" not in params:
             return None
-        qs = ' '.join([v for k, v in params.items() if k == "any"])
+        qs = ' '.join([v.lower() for k, v in params.items() if k == "any"])
         result = {
             "simple_query_string": {
                 "fields": ["quote", "tags", "text", "uri.parts","title"],

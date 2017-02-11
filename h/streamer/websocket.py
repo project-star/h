@@ -111,8 +111,16 @@ def handle_message(message, session=None):
         elif msg_type == 'metrics_data':
             user = message.user
             event = data.get("eventName")
+            if event == "NewConnectionLogin":
+                _send_notification(socket,user)
             _update_metricsdb(session,user,event)
             print event
+        elif msg_type == 'notification_update':
+            user = message.user
+            event = data.get("eventName")
+            if event == "sharingNotified":
+                _update_notification(socket,user,"sharing")
+            _update_metricsdb(session,user,event)
     except:
         # TODO: clean this up, catch specific errors, narrow the scope
         log.exception("Parsing filter: %s", data)
@@ -141,3 +149,19 @@ def _expand_uris(session, clause):
 def _update_metricsdb(session,user,event):
     if user is not None:
         storage.updatemetrics(session,user,event)
+
+
+def _send_notification(socket,user):
+    msg = {}
+    entries=storage.get_notification(user)
+    msg["purpose"] = "notification"
+    for items in entries:
+        print "++++while retrieving the notification entries++++"
+        print items
+        if items["notificationName"] == "sharing":
+            msg["type"]="sharing"
+            msg["shareCount"] = items["sharecount"]
+            msg["value"] = "You have " + str(items["sharecount"]) + " unread ReNotes in sharing tab. Visit https://renoted.com/shared for further info"
+            socket.send_json(msg)
+def _update_notification(socket,user,type):  
+    storage.update_notification(user,type)

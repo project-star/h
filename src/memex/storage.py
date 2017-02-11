@@ -810,6 +810,22 @@ def updatemetrics(session,user,event):
     return True;
 
 
+def make_sharing_notification_entry(username,number):
+    db = get_db()
+    count = db.notifications.find( { "user": username, "notificationName": "sharing", "notified":False} ).count()
+    if count==0:
+         db.notifications.insert({"user": username, "notificationName": "sharing", "notified":False,"sharecount": number})
+    else:
+         db.notifications.update({"user": username, "notificationName": "sharing", "notified":False},{'$inc': {'sharecount': number}})
+
+def get_notification(username):
+    db = get_db()
+    values= db.notifications.find( { "user": username, "notified":False} )
+    return values
+
+def update_notification(username,type):
+    db = get_db()
+    db.notifications.update({"user": username, "notificationName": type, "notified":False},{'$set': {'notified': True}})
 
 def get_db():
     client = MongoClient('0.0.0.0:27017')

@@ -271,6 +271,10 @@ def createSharing(request):
     else:
         sharedtoemail = sharedtouser[0].email
         retvalue["status"] = 'success'
+    sharedtofulluserid = "acct:"+sharedtouser[0].username + "@"+sharedtouser[0].authority
+    print "++++to check if data collection is right++"
+    print sharedtofulluserid
+    storage.make_sharing_notification_entry(sharedtofulluserid,len(value["annotation_ids"]))
     print value["annotation_ids"]
     for item in value["annotation_ids"]:
         sharedpage = _sharedpage(item,sharedtoemail,request)
