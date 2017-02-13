@@ -111,8 +111,7 @@ def handle_message(message, session=None):
         elif msg_type == 'metrics_data':
             user = message.user
             event = data.get("eventName")
-            if event == "NewConnectionLogin":
-                _send_notification(socket,user)
+            _send_notification(socket,user)
             _update_metricsdb(session,user,event)
             print event
         elif msg_type == 'notification_update':
@@ -163,5 +162,8 @@ def _send_notification(socket,user):
             msg["shareCount"] = items["sharecount"]
             msg["value"] = "You have " + str(items["sharecount"]) + " unread ReNotes in sharing tab. Visit https://renoted.com/shared for further info"
             socket.send_json(msg)
+    if (entries.count() == 0):
+        msg["type"]="clearsharing"
+        socket.send_json(msg)       
 def _update_notification(socket,user,type):  
     storage.update_notification(user,type)
