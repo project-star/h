@@ -159,6 +159,14 @@ def index(context, request):
                      'desc': "Delete a sharedannotation"
                 }
             },
+            'stack': {
+               'update': {
+                     'method': 'POST',
+                     'url': request.route_url('api.stacks'),
+                     'desc': "Update stacks"
+                }
+            },
+            
             'search': {
                 'method': 'GET',
                 'url': request.route_url('api.search'),
@@ -251,6 +259,24 @@ def create(request):
     links_service = request.find_service(name='links')
     presenter = AnnotationJSONPresenter(annotation, links_service)
     return presenter.asdict()
+
+
+@api_config(route_name='api.stacks',
+            request_method='POST',
+            effective_principals=security.Authenticated)
+def get_updatestacks(request):
+    value=(_json_payload(request))
+    uriaddress = value["uriaddress"]
+    if "stacks" not in value:
+        uri_id = _getmainuri(request,uriaddress)[0].id
+        val = storage.get_urlstack(uri_id,request.authenticated_userid)
+        return val
+    else:
+        uri_id = _getmainuri(request,uriaddress)[0].id
+        storage.update_urlstack(uri_id,request.authenticated_userid,value["stacks"])
+        val = storage.get_urlstack(uri_id,request.authenticated_userid)
+        return val
+
 
 
 @api_config(route_name='api.sharings',

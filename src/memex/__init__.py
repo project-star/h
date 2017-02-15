@@ -41,3 +41,4 @@ def includeme(config):
                       '/sharingurls/{id:[A-Za-z0-9_-]{20,22}}',
                      factory='memex.resources:SharedURLFactory',
                      traverse='/{id}')
+    config.add_route('api.stacks', '/stacks')

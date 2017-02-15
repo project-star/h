@@ -823,6 +823,56 @@ def get_notification(username):
     values= db.notifications.find( { "user": username, "notified":False} )
     return values
 
+
+
+def update_urlstack(uri_id,username,stacks):
+    db = get_db()
+    count = db.urlstack.find( { "user": username, "uri_id": uri_id}).count()
+    if count==0:
+         db.urlstack.insert({"user": username, "uri_id": uri_id, "stacks":stacks})
+    else:
+         db.urlstack.update({ "user": username, "uri_id": uri_id},{'$set': {'stacks': stacks}})
+
+    count = db.userstack.find({ "user": username}).count()
+    if count==0:
+         allstacks=[]
+         db.userstack.insert({"user": username, "allstacks":allstacks})
+         for item in stacks:
+             db.userstack.update({"user": username},{'$addToSet':{"allstacks" : item}})
+    else:
+         for item in stacks:
+             db.userstack.update({"user": username},{'$addToSet':{"allstacks" : item}})
+
+def get_urlstack(uri_id,username):
+    db = get_db()
+    userstacks = db.userstack.find({"user":username})
+    urlstacks  = db.urlstack.find({"user": username, "uri_id": uri_id})
+    singlestack = {}
+    mainreply = []
+    returnreply = {}
+    if (userstacks.count()) > 0:
+        for item in userstacks[0]["allstacks"]:
+            print item
+            singlestack = {}
+            singlestack["name"] = item
+            singlestack["status"] = False
+            if urlstacks.count() > 0:
+                if (item in urlstacks[0]["stacks"]):
+                    singlestack["status"] = True
+            mainreply.append(singlestack)
+        returnreply["total"] = len(mainreply)
+        returnreply["stacks"] = mainreply
+    else:
+        returnreply["total"] = 0
+        returnreply["stacks"] = []
+    returnreply["uri_id"]= uri_id
+    print returnreply
+    return returnreply     
+
+   
+
+
+
 def update_notification(username,type):
     db = get_db()
     db.notifications.update({"user": username, "notificationName": type, "notified":False},{'$set': {'notified': True}})
