@@ -266,9 +266,19 @@ def create(request):
             effective_principals=security.Authenticated)
 def get_updatestacks(request):
     value=(_json_payload(request))
-    uriaddress = value["uriaddress"]
+    if "uriaddress" not in value:
+        uriaddress = "againsomething"
+    else:
+        if value["uriaddress"]:
+            uriaddress = value["uriaddress"]
+        else:
+            uriaddress = "againsomething"
     if "stacks" not in value:
-        uri_id = _getmainuri(request,uriaddress)[0].id
+        uri_id_initial = _getmainuri(request,uriaddress)
+        if (len(uri_id_initial))>0:
+            uri_id = uri_id_initial[0].id
+        else:
+            uri_id = "something"
         val = storage.get_urlstack(uri_id,request.authenticated_userid)
         return val
     else:
