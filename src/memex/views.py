@@ -273,17 +273,12 @@ def get_updatestacks(request):
             uriaddress = value["uriaddress"]
         else:
             uriaddress = "againsomething"
-    uri_id_initial = _getmainuri(request,uriaddress)
-    if (len(uri_id_initial))>0:
-        uri_id = uri_id_initial[0].id
-    else:
-        uri_id = "something"
     if "stacks" not in value:
-        val = storage.get_urlstack(uri_id,request.authenticated_userid)
+        val = storage.get_urlstack(uriaddress,request.authenticated_userid)
         return val
     else:
-        storage.update_urlstack(uri_id,request.authenticated_userid,value["stacks"])
-        val = storage.get_urlstack(uri_id,request.authenticated_userid)
+        storage.update_urlstack(uriaddress,request.authenticated_userid,value["stacks"])
+        val = storage.get_urlstack(uriaddress,request.authenticated_userid)
         return val
 
 
