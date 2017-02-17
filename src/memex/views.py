@@ -164,6 +164,11 @@ def index(context, request):
                      'method': 'POST',
                      'url': request.route_url('api.stacks'),
                      'desc': "Update stacks"
+                },
+                'read': {
+                    'method': 'GET',
+                    'url': request.route_url('api.stacks'),
+                    'desc': "Get your shared urls"
                 }
             },
             
@@ -908,7 +913,102 @@ def readsharedurls(request):
         return retval    
 
 
+@api_config(route_name='api.stacks',
+            request_method='GET',
+            effective_principals=security.Authenticated)
+def readstackurls(request):
+    """Get the list of annotated urls from the user."""
+    params = request.params.copy()
+    valueparams = request.params.copy()
+    print ("+++ in urls params ++++")
+    print params
+    stackName = params.pop('stackName','')
+    if stackName:
+        print "++++we have a stackName+++++"
+        print stackName
+    else:
+        print "we don't have a stackname"
+    print params
+    filtereduriids=_geturiidsbystackname(stackName,request)
+    type = valueparams.pop('type','all')
+    print type 
+    print (type == 'all')
+    urllist=[]
+    retval={}
+    if len(params) > 0 and type == 'all':
+        print ("+++params is not none+++")
+        result = search_lib.Search(request) \
+        .run(params)
 
+        out = {
+            'total': result.total,
+            'rows': _sort_annotations(_present_annotations_withscore(request, result.annotation_ids, result.annotation_ids_map))
+        }
+        print out["rows"]
+        preexistingurl_id = []
+        urlwiseannots={}
+        for item in out["rows"]:
+            if (item["uri_id"] in filtereduriids):
+                searchurlid = item["uri_id"]
+            
+                urlsingledata = storage.fetch_url(request.db,searchurlid)
+                urlstruct=SimpleUrlJSONPresenter(urlsingledata)
+                if (searchurlid not in preexistingurl_id):
+                    urlwiseannots[str(searchurlid)]=[]
+                    urllist.append(urlstruct.asdict())
+                    preexistingurl_id.append(searchurlid)
+                urlwiseannots[str(searchurlid)].append(item)
+                print urlwiseannots[searchurlid]
+                print urllist
+                for item1 in urllist:
+                    if item1["id"] == searchurlid:
+                        item1["annotation"] = urlwiseannots[str(searchurlid)]
+                        item1["allannotation"] = _renotedread_allannotations(item1["id"],request)["annotations"]
+                        item1["relevance"] = _max_relevance_perurl(item1["annotation"])
+        retval["total"] = len(urllist)
+        retval["urllist"] = urllist
+        return retval
+    elif (type != 'all') and len(params) == 1:
+        print ("+++params is  of type+++")
+        urlsdata = storage.fetch_urls(request.db,request.authenticated_userid)
+        urllist=[]
+        retval={}
+        for item in urlsdata:
+            if (item.id in filtereduriids):
+                params=MultiDict([(u'uri_id', item.id),(u'limit', 1),(u'type',type)])
+                result = search_lib.Search(request) \
+                .run(params)
+                urlstruct=SimpleUrlJSONPresenter(item)
+                urlstructannot = urlstruct.asdict()
+                urlstructannot["allannotation"] = _renotedread_allannotations(item.id,request)["annotations"]
+            
+                urlstructannot["annotation"] = _present_annotations_withscore(request, result.annotation_ids, result.annotation_ids_map)
+                urlstructannot["relevance"] = _max_relevance_perurl(urlstructannot["annotation"])      
+                if (len(result.annotation_ids) > 0):
+                    urllist.append(urlstructannot)
+        retval["total"] = len(urllist)
+        retval["urllist"] = urllist
+        return retval
+    else:
+        print ("+++params is  none+++")
+        urlsdata = storage.fetch_urls(request.db,request.authenticated_userid)
+        urllist=[]
+        retval={}
+        for item in urlsdata:
+            if (item.id in filtereduriids):
+                params=MultiDict([(u'uri_id', item.id),(u'limit', 1)])
+                result = search_lib.Search(request) \
+                .run(params)
+                urlstruct=SimpleUrlJSONPresenter(item)
+                urlstructannot = urlstruct.asdict()
+                urlstructannot["allannotation"] = _renotedread_allannotations(item.id,request)["annotations"]
+                urlstructannot["annotation"] = _present_annotations_withscore(request, result.annotation_ids, result.annotation_ids_map)
+                urlstructannot["relevance"] = _max_relevance_perurl(urlstructannot["annotation"])
+                if (len(result.annotation_ids) > 0):
+                    urllist.append(urlstructannot)
+        retval["total"] = len(urllist)
+        retval["urllist"] = urllist
+        return retval
 
 
 
@@ -984,6 +1084,20 @@ def _createsharedannotationentry(item,sharedtoemail,sharedpageid,sharingid,reque
     sharedannotation = storage.create_sharedannotation(request, data)
     _publish_annotation_event(request, sharedannotation, 'sharedcreate')
     return sharedannotation
+
+
+
+def _geturiidsbystackname(stack,request):
+    retval = []
+    db = get_db()
+    mongovalues = db.urlstack.find({"user":request.authenticated_userid,"stacks":stack})
+    for item in mongovalues:
+        print item["uri_id"]
+        sqlurientry = _getmainuri(request,item["uri_id"])
+        if len(sqlurientry) > 0:
+            retval.append(sqlurientry[0].id)
+    print retval
+    return retval
   
 def get_db():
     client = MongoClient('0.0.0.0:27017')
