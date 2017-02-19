@@ -296,6 +296,53 @@ def get_updatestacks(request):
         val = storage.get_urlstack(uriaddress,request.authenticated_userid)
         return val
 
+@api_config(route_name='api.stacks',
+            request_method='PUT',
+            effective_principals=security.Authenticated)
+def put_updatestacks(request):
+    value=(_json_payload(request))
+    print value["oldname"]
+    print value["newname"]
+    return "success"
+  #  if "uriaddress" not in value:
+  #      uriaddress = "againsomething"
+  #  else:
+  #      if value["uriaddress"]:
+  #          uriaddress = value["uriaddress"]
+  #      else:
+  #          uriaddress = "againsomething"
+  #  if "stacks" not in value:
+  #      val = storage.get_urlstack(uriaddress,request.authenticated_userid)
+  #      return val
+  #  else:
+  #      storage.update_urlstack(uriaddress,request.authenticated_userid,value["stacks"])
+  #      val = storage.get_urlstack(uriaddress,request.authenticated_userid)
+  #      return val
+
+
+@api_config(route_name='api.stacksdelete',
+            request_method='PUT',
+            effective_principals=security.Authenticated)
+def delete_updatestacks(request):
+    value=(_json_payload(request))
+    print value["name"]
+    return "success"
+  #  if "uriaddress" not in value:
+  #      uriaddress = "againsomething"
+  #  else:
+  #      if value["uriaddress"]:
+  #          uriaddress = value["uriaddress"]
+  #      else:
+  #          uriaddress = "againsomething"
+  #  if "stacks" not in value:
+  #      val = storage.get_urlstack(uriaddress,request.authenticated_userid)
+  #      return val
+  #  else:
+  #      storage.update_urlstack(uriaddress,request.authenticated_userid,value["stacks"])
+  #      val = storage.get_urlstack(uriaddress,request.authenticated_userid)
+  #      return val
+
+
 
 
 @api_config(route_name='api.sharings',
