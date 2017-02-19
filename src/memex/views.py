@@ -300,9 +300,19 @@ def get_updatestacks(request):
             request_method='PUT',
             effective_principals=security.Authenticated)
 def put_updatestacks(request):
+    
     value=(_json_payload(request))
     print value["oldname"]
     print value["newname"]
+    oldstack=[]
+    newstack=[]
+    oldstack.append(value["oldname"])
+    newstack.append(value["newname"])
+    username = request.authenticated_userid;
+    db=get_db()
+    db.userstack.update({"user": username},{'$pull':{"allstacks" : value["oldname"]}})
+    db.userstack.update({"user": username},{'$addToSet':{"allstacks" : value["newname"]}})
+    db.urlstack.update({ "user": username, "stacks":oldstack},{'$set': {'stacks': newstack}})
     return "success"
   #  if "uriaddress" not in value:
   #      uriaddress = "againsomething"
@@ -326,6 +336,13 @@ def put_updatestacks(request):
 def delete_updatestacks(request):
     value=(_json_payload(request))
     print value["name"]
+    oldstack=[]
+    newstack=[]
+    oldstack.append(value["name"])
+    username = request.authenticated_userid;
+    db=get_db()
+    db.userstack.update({"user": username},{'$pull':{"allstacks" : value["name"]}})
+    db.urlstack.update({ "user": username, "stacks":oldstack},{'$set': {'stacks': newstack}})
     return "success"
   #  if "uriaddress" not in value:
   #      uriaddress = "againsomething"
