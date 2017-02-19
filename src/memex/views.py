@@ -418,6 +418,7 @@ def readannotatedurls(request):
     print (type == 'all')
     urllist=[]
     retval={}
+    allstacklist = _getallstacklist(request.authenticated_userid)
     if len(params) > 0 and type == 'all':
         print ("+++params is not none+++")
         result = search_lib.Search(request) \
@@ -447,6 +448,7 @@ def readannotatedurls(request):
                     item1["typeFilter"] = _getfiltertype(request.authenticated_userid,urlwiseannots[str(searchurlid)])
                     item1["allannotation"] = _renotedread_allannotations(item1["id"],request)["annotations"]
                     item1["relevance"] = _max_relevance_perurl(item1["annotation"])
+                    item1["allstackslist"] = allstacklist
         retval["total"] = len(urllist)
         retval["urllist"] = urllist
         return retval
@@ -467,6 +469,7 @@ def readannotatedurls(request):
             urlstructannot["relevance"] = _max_relevance_perurl(urlstructannot["annotation"])      
             if (len(result.annotation_ids) > 0):
                 urlstructannot["typeFilter"] = _getfiltertype(request.authenticated_userid,urlstructannot["annotation"])
+                urlstructannot["allstackslist"]=allstacklist
                 urllist.append(urlstructannot)
         retval["total"] = len(urllist)
         retval["urllist"] = urllist
@@ -487,6 +490,7 @@ def readannotatedurls(request):
             urlstructannot["relevance"] = _max_relevance_perurl(urlstructannot["annotation"])
             if (len(result.annotation_ids) > 0):
                 urlstructannot["typeFilter"] = _getfiltertype(request.authenticated_userid,urlstructannot["annotation"])
+                urlstructannot["allstackslist"]=allstacklist
                 urllist.append(urlstructannot)
         retval["total"] = len(urllist)
         retval["urllist"] = urllist
@@ -921,6 +925,7 @@ def readsharedurls(request):
     print (type == 'all')
     urllist=[]
     retval={}
+    allstacklist = _getallstacklist(request.authenticated_userid)
     if len(params) > 0 and type == 'all':
         print ("+++params is not none+++")
         result = search_lib.Sharedsearch(request) \
@@ -950,6 +955,7 @@ def readsharedurls(request):
                     item1["typeFilter"] = _getfiltertype(request.authenticated_userid,urlwiseannots[str(searchurlid)])
                     item1["allannotation"] = _renotedread_allsharedannotations(item1["id"],request)["annotations"]
                     item1["relevance"] = _max_relevance_perurl(item1["annotation"])
+                    item1["allstackslist"]=allstacklist
         retval["total"] = len(urllist)
         retval["urllist"] = urllist
         return retval
@@ -970,6 +976,7 @@ def readsharedurls(request):
             urlstructannot["relevance"] = _max_relevance_perurl(urlstructannot["annotation"])      
             if (len(result.annotation_ids) > 0):
                 urlstructannot["typeFilter"] = _getfiltertype(request.authenticated_userid,urlstructannot["annotation"])
+                urlstructannot["allstackslist"]=allstacklist
                 urllist.append(urlstructannot)
         retval["total"] = len(urllist)
         retval["urllist"] = urllist
@@ -988,6 +995,7 @@ def readsharedurls(request):
             if (len(urlstruct_ret["allannotation"])>0):
                 urlstruct_ret["annotation"].append(urlstruct_ret["allannotation"][0])
                 urlstruct_ret["typeFilter"] = _getfiltertype(request.authenticated_userid,urlstruct_ret["annotation"])
+                urlstruct_ret["allstackslist"]=allstacklist
             retval["urllist"].append(urlstruct_ret)
 
         return retval    
@@ -1114,6 +1122,14 @@ def _getstacklist(username,uri,retval):
         print "++++++++uri contains stack entries++++++"
         for item1 in item["stacks"]:
             retval.append(item1)
+    return retval
+
+def _getallstacklist(username):
+    db = get_db()
+    retval = []
+    userstackentries = db.userstack.find({"user":username})
+    for item in userstackentries:
+        retval = item["allstacks"]
     return retval
 def _createannotationwisesharing(item,sharedtoemail,sharedpageid,request):
     data= {}
