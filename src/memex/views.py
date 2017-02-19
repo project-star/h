@@ -370,6 +370,7 @@ def readannotatedurls(request):
             for item1 in urllist:
                 if item1["id"] == searchurlid:
                     item1["annotation"] = urlwiseannots[str(searchurlid)]
+                    item1["typeFilter"] = _getfiltertype(request.authenticated_userid,urlwiseannots[str(searchurlid)])
                     item1["allannotation"] = _renotedread_allannotations(item1["id"],request)["annotations"]
                     item1["relevance"] = _max_relevance_perurl(item1["annotation"])
         retval["total"] = len(urllist)
@@ -391,6 +392,7 @@ def readannotatedurls(request):
             urlstructannot["annotation"] = _present_annotations_withscore(request, result.annotation_ids, result.annotation_ids_map)
             urlstructannot["relevance"] = _max_relevance_perurl(urlstructannot["annotation"])      
             if (len(result.annotation_ids) > 0):
+                urlstructannot["typeFilter"] = _getfiltertype(request.authenticated_userid,urlstructannot["annotation"])
                 urllist.append(urlstructannot)
         retval["total"] = len(urllist)
         retval["urllist"] = urllist
@@ -410,6 +412,7 @@ def readannotatedurls(request):
             urlstructannot["annotation"] = _present_annotations_withscore(request, result.annotation_ids, result.annotation_ids_map)
             urlstructannot["relevance"] = _max_relevance_perurl(urlstructannot["annotation"])
             if (len(result.annotation_ids) > 0):
+                urlstructannot["typeFilter"] = _getfiltertype(request.authenticated_userid,urlstructannot["annotation"])
                 urllist.append(urlstructannot)
         retval["total"] = len(urllist)
         retval["urllist"] = urllist
@@ -1010,8 +1013,31 @@ def readstackurls(request):
         retval["urllist"] = urllist
         return retval
 
+def _getfiltertype(username,annotationlist):
+    print "++++in get filter type++++"
+    print annotationlist[0]["type"]
+    retval = ["all"]
+    if ('audio' in annotationlist[0]["type"]):
+        retval.append("audio")
+    elif ('video' in annotationlist[0]["type"]):
+        retval.append("video")
+    else:
+        retval.append("text")
+    uri = annotationlist[0]["uri"]
+    stackval = _getstacklist(username,uri,retval)
+    return stackval
 
 
+def _getstacklist(username,uri,retval):
+    
+    retval.append("serversideaddedstack")
+    db=get_db()
+    mongostackentries = db.urlstack.find({"user":username,"uri_id":uri})
+    for item in mongostackentries:
+        print "++++++++uri contains stack entries++++++"
+        for item1 in item["stacks"]:
+            retval.append(item1)
+    return retval
 def _createannotationwisesharing(item,sharedtoemail,sharedpageid,request):
     data= {}
     data["sharedtousername"] = _getsharedtouser(request,sharedtoemail)[0].username
