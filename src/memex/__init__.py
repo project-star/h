@@ -42,3 +42,4 @@ def includeme(config):
                      factory='memex.resources:SharedURLFactory',
                      traverse='/{id}')
     config.add_route('api.stacks', '/stacks')
+    config.add_route('api.stacksdelete', '/stacksdelete')

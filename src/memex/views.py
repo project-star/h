@@ -169,6 +169,16 @@ def index(context, request):
                     'method': 'GET',
                     'url': request.route_url('api.stacks'),
                     'desc': "Get your shared urls"
+                },
+               'edit': {
+                     'method': 'PUT',
+                     'url': request.route_url('api.stacks'),
+                     'desc': "Update stack name"
+                },
+                'delete': {
+                    'method': 'PUT',
+                    'url': request.route_url('api.stacksdelete'),
+                    'desc': "Delete a stack name"
                 }
             },
             
@@ -873,6 +883,7 @@ def readsharedurls(request):
             for item1 in urllist:
                 if item1["id"] == searchurlid:
                     item1["annotation"] = urlwiseannots[str(searchurlid)]
+                    item1["typeFilter"] = _getfiltertype(request.authenticated_userid,urlwiseannots[str(searchurlid)])
                     item1["allannotation"] = _renotedread_allsharedannotations(item1["id"],request)["annotations"]
                     item1["relevance"] = _max_relevance_perurl(item1["annotation"])
         retval["total"] = len(urllist)
@@ -894,6 +905,7 @@ def readsharedurls(request):
             urlstructannot["annotation"] = _present_sharedannotations_withscore(request, result.annotation_ids, result.annotation_ids_map)
             urlstructannot["relevance"] = _max_relevance_perurl(urlstructannot["annotation"])      
             if (len(result.annotation_ids) > 0):
+                urlstructannot["typeFilter"] = _getfiltertype(request.authenticated_userid,urlstructannot["annotation"])
                 urllist.append(urlstructannot)
         retval["total"] = len(urllist)
         retval["urllist"] = urllist
@@ -911,6 +923,7 @@ def readsharedurls(request):
             urlstruct_ret["annotation"] = []
             if (len(urlstruct_ret["allannotation"])>0):
                 urlstruct_ret["annotation"].append(urlstruct_ret["allannotation"][0])
+                urlstruct_ret["typeFilter"] = _getfiltertype(request.authenticated_userid,urlstruct_ret["annotation"])
             retval["urllist"].append(urlstruct_ret)
 
         return retval    
