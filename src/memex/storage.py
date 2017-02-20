@@ -838,7 +838,10 @@ def update_urlstack(uri_id,username,stacks):
          allstacks=[]
          db.userstack.insert({"user": username, "allstacks":allstacks})
          for item in stacks:
-             db.userstack.update({"user": username},{'$addToSet':{"allstacks" : item}})
+             if (item == "null"):
+                 db.userstack.upsert({"user": username, "allstacks":allstacks})
+             else:
+                 db.userstack.update({"user": username},{'$addToSet':{"allstacks" : item}})
     else:
          for item in stacks:
              db.userstack.update({"user": username},{'$addToSet':{"allstacks" : item}})

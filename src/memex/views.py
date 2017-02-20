@@ -310,9 +310,9 @@ def put_updatestacks(request):
     newstack.append(value["newname"])
     username = request.authenticated_userid;
     db=get_db()
-    db.userstack.update({"user": username},{'$pull':{"allstacks" : value["oldname"]}})
-    db.userstack.update({"user": username},{'$addToSet':{"allstacks" : value["newname"]}})
-    db.urlstack.update({ "user": username, "stacks":oldstack},{'$set': {'stacks': newstack}})
+    db.userstack.update({"user": username},{'$pull':{"allstacks" : value["oldname"]}},multi=True)
+    db.userstack.update({"user": username},{'$addToSet':{"allstacks" : value["newname"]}},multi=True)
+    db.urlstack.update({ "user": username, "stacks":oldstack},{'$set': {'stacks': newstack}},multi=True)
     return "success"
   #  if "uriaddress" not in value:
   #      uriaddress = "againsomething"
