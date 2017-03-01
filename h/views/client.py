@@ -12,11 +12,29 @@ from pyramid import exceptions
 from pyramid import httpexceptions
 from pyramid import session
 from pyramid.view import view_config
-
+from pymongo import MongoClient
 from h import client
 from h import session as h_session
 from h.auth.tokens import generate_jwt
 from h.util.view import json_view
+
+def get_db():
+    client = MongoClient('0.0.0.0:27017')
+    db = client.renoted
+    return db
+
+
+def get_data_frommongo(userid):
+    db=get_db()
+    retval={}
+    retval["value"] = False
+    data = db.userstatus.find({"userid":userid})
+    for item in data:
+        if (item["status"]=="loggedin"):
+            retval["authenticated"] = item["authenticated"]
+            retval["img_url"] = item["img_url"]
+            retval["value"] = True
+    return retval
 
 
 def render_app(request, extra=None):
@@ -76,7 +94,13 @@ def embed(context, request):
 @json_view(route_name='session', http_cache=0)
 def session_view(request):
     flash = h_session.pop_flash(request)
+    print flash
     model = h_session.model(request)
+    print model
+    mongodata = get_data_frommongo(model["userid"])
+    if mongodata["value"]:
+        model["authenticated"] = mongodata["authenticated"]
+        model["img_url"] = mongodata["img_url"]
     return dict(status='okay', flash=flash, model=model)
 
 

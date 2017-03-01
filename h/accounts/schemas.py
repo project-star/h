@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from codecs import open
 import logging
-
+import requests
+import json
 import colander
 import deform
 from pyramid.session import check_csrf_token
@@ -165,6 +166,44 @@ class LoginSchema(CSRFSchema):
 
         value['user'] = user
 
+
+class GoogleLoginSchema(CSRFSchema):
+    access_token = colander.SchemaNode(
+        colander.String(),
+        title=_('AccessToken'),
+        widget=deform.widget.TextInputWidget(autofocus=True),
+    )
+
+    def validator(self, node, value):
+        super(GoogleLoginSchema, self).validator(node, value)
+
+        request = node.bindings['request']
+        access_token = value.get('access_token')
+        googledata = get_user_data("https://www.googleapis.com/plus/v1/people/me?access_token=",access_token)
+        user = models.User.get_by_username(request.db, googledata["emails"][0]["value"])
+        if user is None:
+            user = models.User.get_by_email(request.db, googledata["emails"][0]["value"])
+
+        if user is None:
+            err = colander.Invalid(node)
+            err['username'] = _('User does not exist.')
+            raise err
+
+#        if not user.check_password(password):
+#            err = colander.Invalid(node)
+#            err['password'] = _('Wrong password.')
+#            raise err
+
+        if not user.is_activated:
+            err = colander.Invalid(node)
+            err['username'] = _(
+                "Please check your email and open the link to activate your "
+                "account.")
+            raise err
+        print user
+        value['user'] = user
+        value['img_url'] = googledata["image"]["url"]
+        value['authenticated'] = 'google'
 
 class ForgotPasswordSchema(CSRFSchema):
     email = colander.SchemaNode(
@@ -352,6 +391,19 @@ def validate_orcid(node, cstruct):
     except ValueError as exc:
         raise colander.Invalid(node, str(exc))
 
+
+def check_access_token(url,token):
+   retval = {}
+   r = requests.get(url+token)
+   print json.loads(r.content)
+   return json.loads(r.content)
+
+
+def get_user_data(url,token):
+   retval = {}
+   r = requests.get(url+token)
+   print json.loads(r.content)
+   return json.loads(r.content)
 
 class EditProfileSchema(CSRFSchema):
     display_name = colander.SchemaNode(

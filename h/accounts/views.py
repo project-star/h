@@ -10,6 +10,7 @@ from pyramid import security
 from pyramid.exceptions import BadCSRFToken
 from pyramid.view import view_config, view_defaults
 
+from pymongo import MongoClient
 from h import accounts
 from h import form
 from h import i18n
@@ -29,9 +30,54 @@ _ = i18n.TranslationString
 
 # A little helper to ensure that session data is returned in every ajax
 # response payload.
+
+def get_db():
+    client = MongoClient('0.0.0.0:27017')
+    db = client.renoted
+    return db
+
+def update_mongologin(userid,status,img_url,authenticated):
+    db=get_db()
+    db.userstatus.update({"userid":userid},{'$set': {"status":status,"img_url":img_url,"authenticated":authenticated}},upsert=True)
+
+def update_mongologout(userid,status):
+    db=get_db()
+    db.userstatus.update({"userid":userid},{'$set': {"status":status}},upsert=True)
+
+def get_data_frommongo(userid):
+    db=get_db()
+    retval={}
+    retval["value"] = False
+    data = db.userstatus.find({"userid":userid})
+    for item in data:
+        if (item["status"]=="loggedin"):
+            retval["authenticated"] = item["authenticated"]
+            retval["img_url"] = item["img_url"]
+            retval["value"] = True
+    return retval
+
 def ajax_payload(request, data):
-    payload = {'flash': session.pop_flash(request),
+    tobeadded = get_data_frommongo(request.authenticated_userid)
+    if (tobeadded["value"]):
+        payload = {'flash': session.pop_flash(request),
+                   'model': session.model(request,tobeadded["img_url"],tobeadded["authenticated"])}
+    else:
+        payload = {'flash': session.pop_flash(request),
+               'model': session.model(request)}   
+    payload.update(data)
+    return payload
+
+def ajax_payload1(request, data,img_url,authenticated):
+    update_mongologin(request.authenticated_userid,"loggedin",img_url,authenticated)
+    tobeadded = get_data_frommongo(request.authenticated_userid)
+    if (tobeadded["value"]):
+        payload = {'flash': session.pop_flash(request),
+                   'model': session.model(request,tobeadded["img_url"],tobeadded["authenticated"])}
+    else:
+        payload = {'flash': session.pop_flash(request),
                'model': session.model(request)}
+    payload["model"]["img_url"] = img_url
+    payload["model"]["authenticated"] = authenticated
     payload.update(data)
     return payload
 
@@ -144,6 +190,7 @@ class AuthController(object):
 
     def _logout(self):
         if self.request.authenticated_userid is not None:
+            update_mongologout(self.request.authenticated_userid,"loggedout")
             self.request.registry.notify(LogoutEvent(self.request))
             self.request.session.invalidate()
         headers = security.forget(self.request)
@@ -159,11 +206,15 @@ class AjaxAuthController(AuthController):
         self.request = request
         self.schema = schemas.LoginSchema().bind(request=self.request)
         self.form = request.create_form(self.schema)
+        self.googleschema = schemas.GoogleLoginSchema().bind(request=self.request)
+        self.googleform = request.create_form(self.googleschema)
 
     @view_config(request_param='__formid__=login')
     def login(self):
         try:
             json_body = self.request.json_body
+            print "++++in normal login flow+++++"
+            print json_body
         except ValueError as exc:
             raise accounts.JSONError(
                 _('Could not parse request body as JSON: {message}'.format(
@@ -179,7 +230,7 @@ class AjaxAuthController(AuthController):
         json_body['password'] = unicode(json_body.get('password') or '')
 
         appstruct = self.form.validate(json_body.items())
-
+        print appstruct
         user = appstruct['user']
         headers = self._login(user)
         val={}
@@ -189,8 +240,43 @@ class AjaxAuthController(AuthController):
         print headers
         
         self.request.response.headers.extend(headers)
-
+      
         return ajax_payload(self.request, {'status': 'okay'})
+
+
+    @view_config(request_param='__formid__=googlelogin')
+    def googlelogin(self):
+        try:
+            json_body = self.request.json_body
+            print "++++in googlelogin flow++++"
+            print json_body
+        except ValueError as exc:
+            raise accounts.JSONError(
+                _('Could not parse request body as JSON: {message}'.format(
+                    message=exc.message)))
+
+        if not isinstance(json_body, dict):
+            raise accounts.JSONError(
+                _('Request JSON body must have a top-level object'))
+
+        # Transform non-string usernames and password into strings.
+        # Deform crashes otherwise.
+        json_body['access_token'] = unicode(json_body.get('access_token') or '')
+
+        appstruct = self.googleform.validate(json_body.items())
+        print appstruct
+        user = appstruct['user']
+        headers = self._login(user)
+        val={}
+        val['Access-Control-Allow-Origin']='http://loclhost'
+        val1=('Access-Control-Allow-Origin','http://localhost')
+        headers.append(val1)
+        print headers
+
+        self.request.response.headers.extend(headers)
+        print(self.request)
+        
+        return ajax_payload1(self.request, {'status': 'okay'},appstruct['img_url'],appstruct['authenticated'])
 
     @view_config(request_param='__formid__=logout')
     def logout(self):
@@ -837,7 +923,7 @@ def account_reset_email(user, reset_code, reset_link):
                  "clicking on this link:\n\n"
                  "{link}\n\n"
                  "Regards,\n"
-                 "The Hypothesis Team\n")
+                 "The ReNoted Team\n")
     body = emailtext.format(code=reset_code,
                             link=reset_link,
                             username=user.username)
@@ -874,6 +960,9 @@ def dismiss_sidebar_tutorial(request):
     else:
         request.authenticated_user.sidebar_tutorial_dismissed = True
         return ajax_payload(request, {'status': 'okay'})
+
+
+
 
 
 def includeme(config):

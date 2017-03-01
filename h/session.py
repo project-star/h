@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-def model(request):
+def model(request,*args):
     session = {}
     session['csrf'] = request.session.get_csrf_token()
     session['userid'] = request.authenticated_userid
