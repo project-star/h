@@ -148,7 +148,7 @@ class AuthController(object):
     @view_config(request_method='GET')
     def get(self):
         """Render the login page, including the login form."""
-        self._redirect_if_logged_in()
+        self._redirect_if_not_logged_in()
 
         return {'form': self.form.render()}
 
@@ -179,7 +179,9 @@ class AuthController(object):
     def _redirect_if_logged_in(self):
         if self.request.authenticated_userid is not None:
             raise httpexceptions.HTTPFound(location=self.login_redirect)
-
+    def _redirect_if_not_logged_in(self):
+        if self.request.authenticated_userid is None:
+            raise httpexceptions.HTTPFound(location=self.login_redirect)
     def _login(self, user):
         user.last_login_date = datetime.datetime.utcnow()
         self.request.registry.notify(LoginEvent(self.request, user))
