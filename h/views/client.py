@@ -12,7 +12,7 @@ from pyramid import exceptions
 from pyramid import httpexceptions
 from pyramid import session
 from pyramid.view import view_config
-
+from memex import storage
 from h import client
 from h import session as h_session
 from h.auth.tokens import generate_jwt
@@ -77,6 +77,7 @@ def embed(context, request):
 def session_view(request):
     flash = h_session.pop_flash(request)
     model = h_session.model(request)
+    model["showTutorial"] = storage.get_annotation_count(request,model["userid"])
     return dict(status='okay', flash=flash, model=model)
 
 

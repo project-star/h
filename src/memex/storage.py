@@ -134,6 +134,7 @@ def fetch_allsharedannotations(session):
     except types.InvalidUUID:
         return None
 
+
 def fetch_uri(session, uriaddress, userid, isbookmark):
     """
     Fetch the annotation with the given id.
@@ -269,7 +270,15 @@ def fetch_ordered_sharedannotations(session, uri_id):
 
     query = session.query(hmod.Sharedannotation).filter(hmod.Sharedannotation.uri_id==uri_id).all()
     return query
-   
+
+def get_annotation_count(request,userid):
+    val = request.db.query(models.Annotation).filter(models.Annotation.userid==request.authenticated_userid).all()
+    print "++++++number of annotations++++++"
+    print len(val)
+    if len(val)<20:
+        return True;
+    else:
+        return False;   
 
 def create_uri(request, data):
     """

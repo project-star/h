@@ -9,7 +9,7 @@ from pyramid import httpexceptions
 from pyramid import security
 from pyramid.exceptions import BadCSRFToken
 from pyramid.view import view_config, view_defaults
-
+from memex import storage
 from h import accounts
 from h import form
 from h import i18n
@@ -32,6 +32,9 @@ _ = i18n.TranslationString
 def ajax_payload(request, data):
     payload = {'flash': session.pop_flash(request),
                'model': session.model(request)}
+    payload["model"]["showTutorial"] = storage.get_annotation_count(request,request.authenticated_userid)
+    print ("payload while signing in and out")
+    print (payload["model"])
     payload.update(data)
     return payload
 
