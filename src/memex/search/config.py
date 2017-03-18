@@ -23,12 +23,12 @@ ANNOTATION_MAPPING = {
         'annotator_schema_version': {'type': 'string'},
         'created': {'type': 'date'},
         'updated': {'type': 'date'},
-        'quote': {'type': 'string', 'analyzer': 'uni_normalizer'},
-        'tags': {'type': 'string', 'analyzer': 'uni_normalizer'},
-        'uri_id': {'type': 'string', 'analyzer': 'uni_normalizer'},
-        'text': {'type': 'string', 'analyzer': 'uni_normalizer'},
-        'title': {'type': 'string', 'analyzer': 'uni_normalizer'},
-        'type': {'type': 'string', 'analyzer': 'uni_normalizer'},
+        'quote': {'type': 'string', 'analyzer': 'uni_new_normalizer'},
+        'tags': {'type': 'string', 'analyzer': 'uni_new_normalizer'},
+        'uri_id': {'type': 'string', 'analyzer': 'uni_new_normalizer'},
+        'text': {'type': 'string', 'analyzer': 'uni_new_normalizer'},
+        'title': {'type': 'string', 'analyzer': 'uni_new_normalizer'},
+        'type': {'type': 'string', 'analyzer': 'uni_new_normalizer'},
         'deleted': {'type': 'boolean'},
         'uri': {
             'type': 'string',
@@ -75,7 +75,7 @@ ANNOTATION_MAPPING = {
                             'fields': {
                                 'quote': {
                                     'type': 'string',
-                                    'analyzer': 'uni_normalizer',
+                                    'analyzer': 'uni_new_normalizer',
                                 },
                             },
                         },
@@ -123,12 +123,12 @@ SHAREDANNOTATION_MAPPING = {
         'annotator_schema_version': {'type': 'string'},
         'created': {'type': 'date'},
         'updated': {'type': 'date'},
-        'quote': {'type': 'string', 'analyzer': 'uni_normalizer'},
-        'tags': {'type': 'string', 'analyzer': 'uni_normalizer'},
-        'uri_id': {'type': 'string', 'analyzer': 'uni_normalizer'},
-        'text': {'type': 'string', 'analyzer': 'uni_normalizer'},
-        'title': {'type': 'string', 'analyzer': 'uni_normalizer'},
-        'type': {'type': 'string', 'analyzer': 'uni_normalizer'},
+        'quote': {'type': 'string', 'analyzer': 'uni_new_normalizer'},
+        'tags': {'type': 'string', 'analyzer': 'uni_new_normalizer'},
+        'uri_id': {'type': 'string', 'analyzer': 'uni_new_normalizer'},
+        'text': {'type': 'string', 'analyzer': 'uni_new_normalizer'},
+        'title': {'type': 'string', 'analyzer': 'uni_new_normalizer'},
+        'type': {'type': 'string', 'analyzer': 'uni_new_normalizer'},
         'deleted': {'type': 'boolean'},
         'uri': {
             'type': 'string',
@@ -175,7 +175,7 @@ SHAREDANNOTATION_MAPPING = {
                             'fields': {
                                 'quote': {
                                     'type': 'string',
-                                    'analyzer': 'uni_normalizer',
+                                    'analyzer': 'uni_new_normalizer',
                                 },
                             },
                         },
@@ -239,6 +239,10 @@ ANNOTATION_ANALYSIS = {
             'type': 'pattern_capture',
             'preserve_original': 'true',
             'patterns': ['^acct:((.+)@.*)$']
+        },
+        'filter_snowball_en': {
+          'type': 'snowball',
+          'language': 'English'
         }
     },
     'tokenizer': {
@@ -267,6 +271,14 @@ ANNOTATION_ANALYSIS = {
         'uni_normalizer': {
             'tokenizer': 'icu_tokenizer',
             'filter': ['icu_folding']
+        },
+        'uni_new_normalizer': {
+            'filter': [
+              'lowercase',
+              'filter_snowball_en'
+            ],
+          'type': 'custom',
+          'tokenizer': 'whitespace'
         }
     }
 }
