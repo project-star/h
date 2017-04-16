@@ -17,8 +17,12 @@ from memex.db import types
 from memex.events import AnnotationEvent
 from pymongo import MongoClient
 from memex.presenters import AnnotationJSONPresenter
+import uuid
+import base64
 _ = i18n.TranslationStringFactory(__package__)
 import time
+import uuid
+import base64
 def fetch_annotation(session, id_):
     """
     Fetch the annotation with the given id.
@@ -538,6 +542,65 @@ def update_annotation(session, id_, data):
 
     return annotation
 
+def mark_archived_annotation(session, id_):
+    """
+    Update an existing annotation and its associated document metadata.
+
+    Update the annotation identified by id_ with the given
+    data. Create, delete and update document metadata as appropriate.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param id_: the ID of the annotation to be updated, this is assumed to be a
+        validated ID of an annotation that does already exist in the database
+    :type id_: string
+
+    :param data: the validated data with which to update the annotation
+    :type data: dict
+
+    :returns: the updated annotation
+    :rtype: memex.models.Annotation
+
+    """
+    # Remove any 'document' field first so that we don't try to save it on the
+    # annotation object.
+    annotation = session.query(models.Annotation).get(id_)
+    annotation.updated = datetime.utcnow()
+
+    annotation.archived=True
+
+
+    return annotation
+
+def mark_unarchived_annotation(session, id_):
+    """
+    Update an existing annotation and its associated document metadata.
+
+    Update the annotation identified by id_ with the given
+    data. Create, delete and update document metadata as appropriate.
+
+    :param session: the database session
+    :type session: sqlalchemy.orm.session.Session
+
+    :param id_: the ID of the annotation to be updated, this is assumed to be a
+        validated ID of an annotation that does already exist in the database
+    :type id_: string
+
+    :param data: the validated data with which to update the annotation
+    :type data: dict
+
+    :returns: the updated annotation
+    :rtype: memex.models.Annotation
+
+    """
+    # Remove any 'document' field first so that we don't try to save it on the
+    # annotation object.
+    annotation = session.query(models.Annotation).get(id_)
+    annotation.updated = datetime.utcnow()
+
+    annotation.archived=False
+    return annotation
 
 def update_uri(session, annotation):
     """
@@ -889,7 +952,43 @@ def update_notification(username,type):
     db = get_db()
     db.notifications.update({"user": username, "notificationName": type, "notified":False},{'$set': {'notified': True}})
 
+
+def getannotations_in_stack(session,stack_id):
+    db_stacks = get_db_client().stackservice
+    stack_id = stack_id+"=="
+    decoded = base64.urlsafe_b64decode(str(stack_id))
+    stackid=uuid.UUID(bytes=decoded)
+    stackdata = db_stacks.stackdetails.find({"stack_id":stackid})
+    print stackdata
+    db = get_db()
+    name= stackdata[0]["stackname"]
+    print name
+    username = stackdata[0]["user"]
+    print username
+    urlstackdata = db.urlstack.find({"user":username,"stacks":name})
+    print urlstackdata.count()
+    toret=[]
+    for item in urlstackdata:
+         print item["uri_id"]
+         query = session.query(models.Annotation).filter(models.Annotation.userid==username).filter(models.Annotation.target_uri==item["uri_id"]).all()
+         print query
+         for item1 in query:
+             toret.append(item1)
+    print toret
+    return toret
+
+def get_db_client():
+    client = MongoClient('0.0.0.0:27017')
+    return client
+
+
 def get_db():
     client = MongoClient('0.0.0.0:27017')
     db = client.renoted
     return db
+
+
+
+def convert_urlsafe_to_uuid(urlsafe):
+    decoded = base64.urlsafe_b64decode(urlsafe+"==")
+    return  uuid.UUID(bytes=decoded)

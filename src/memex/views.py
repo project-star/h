@@ -21,9 +21,13 @@ from pyramid import security
 from pyramid.view import view_config
 from sqlalchemy.orm import subqueryload
 from werkzeug.datastructures import MultiDict
+import base64
+import uuid
+import datetime
 from memex import cors
 from memex import models
 from memex.events import AnnotationEvent
+from memex.events import StackEvent
 from memex.presenters import AnnotationJSONPresenter
 from memex.presenters import AnnotationSharedJSONPresenter
 from memex.renotedpresenters import UrlJSONPresenter
@@ -213,7 +217,28 @@ def index(context, request):
                      'url': urlupdate_url,
                      'desc': "Delete a url"
                 }
+            },
+            'ontopArchive': {
+                  'method': 'POST',
+                  'url': request.route_url('api.ontop.archive'),
+                  'desc': "Make annotations/stacks Archived"
+            },
+            'ontopDearchive': {
+                  'method': 'POST',
+                  'url': request.route_url('api.ontop.dearchive'),
+                  'desc': "Make annotations/stacks Archived"
+            },
+            'ontopDelete': {
+                  'method': 'POST',
+                  'url': request.route_url('api.ontop.delete'),
+                  'desc': "Make annotations/stacks Deleted"
+            },
+            'stackService': {
+                  'method': 'GET',
+                  'url': request.route_url('api.stackservice.read'),
+                  'desc': "Read Stacks"
             }
+           
         }
     }
 
@@ -882,6 +907,17 @@ def _publish_annotation_event(request,
     print event.action
     request.notify_after_commit(event)
 
+def _publish_stack_event(request,
+                              stack_id,
+                              action):
+    """Publish an event to the stacks queue for this stack action."""
+    stack_dict = None
+
+    event = StackEvent(request, stack_id, action, stack_dict)
+    print event.stack_id
+    print event.action
+    request.notify_after_commit(event)
+
 
 def _renotedread_allannotations(urlid, request):
     """Return the annotation (simply how it was stored in the database)."""
@@ -1222,6 +1258,127 @@ def get_db():
     client = MongoClient('0.0.0.0:27017')
     db = client.renoted
     return db
+
+
+def get_db_client():
+    client = MongoClient('0.0.0.0:27017')
+    return client
+
+#######################OnTopService###################################
+@api_config(route_name='api.ontop.archive',
+            request_method='POST',
+            effective_principals=security.Authenticated)
+def onTopArchive(request):
+    value=(_json_payload(request))
+    if "stacks" in value:
+        print (value["stacks"])    
+        db_stacks = get_db_client().stackservice
+        for stack in value["stacks"]:
+            count = db_stacks.stackdetails.find( { "user": request.authenticated_userid, "stackname": stack}).count()
+            if count > 0:
+                db_stacks.stackdetails.update( { "user": request.authenticated_userid, "stackname": stack},{'$set':{"archived": True, "updated":datetime.datetime.utcnow()}})
+                stackdata= db_stacks.stackdetails.find( { "user": request.authenticated_userid, "stackname": stack})
+               
+                stack_id= convert_uuid_to_urlsafe(stackdata[0]["stack_id"])
+                _publish_stack_event(request,stack_id,"stackarchive")
+                db=get_db()
+                db.userstack.update({"user": request.authenticated_userid},{'$pull':{"allstacks" : stack}})
+            else:
+                stack_id = create_uuid()
+                db_stacks.stackdetails.insert( { "user": request.authenticated_userid, "stackname": stack, "stack_id":stack_id,"archived":False, "deleted": False, "created":datetime.datetime.utcnow(),"updated":datetime.datetime.utcnow(),"deletedat":""})
+                db_stacks.stackdetails.update( { "user": request.authenticated_userid, "stackname": stack},{'$set':{"archived": True, "updated":datetime.datetime.utcnow()}})
+                stackdata= db_stacks.stackdetails.find( { "user": request.authenticated_userid, "stackname": stack})
+
+                stack_id= convert_uuid_to_urlsafe(stackdata[0]["stack_id"])
+                _publish_stack_event(request,stack_id,"stackarchive")
+                db=get_db()
+                db.userstack.update({"user": request.authenticated_userid},{'$pull':{"allstacks" : stack}})         
+        return "success in on top archive service"
+
+    
+    elif "annotations" in value:
+        print (value["annotations"])
+        return "success in on top archive service"
+    else:
+        return "Please provide an array of stacks or annotations to be archived."
+
+@api_config(route_name='api.ontop.dearchive',
+            request_method='POST',
+            effective_principals=security.Authenticated)
+def onTopDearchive(request):
+    value=(_json_payload(request))
+    if "stacks" in value:
+        print (value["stacks"])
+        db_stacks = get_db_client().stackservice
+        for stack in value["stacks"]:
+            count = db_stacks.stackdetails.find( { "user": request.authenticated_userid, "stackname": stack}).count()
+            if count > 0:
+                db_stacks.stackdetails.update( { "user": request.authenticated_userid, "stackname": stack},{'$set':{"archived": False, "updated":datetime.datetime.utcnow()}})
+                stackdata= db_stacks.stackdetails.find( { "user": request.authenticated_userid, "stackname": stack})
+
+                stack_id= convert_uuid_to_urlsafe(stackdata[0]["stack_id"])
+                _publish_stack_event(request,stack_id,"stackdearchive")
+                db=get_db()
+                db.userstack.update({"user": request.authenticated_userid},{'$push':{"allstacks" : stack}})
+            else:
+                stack_id = create_uuid()
+                db_stacks.stackdetails.insert( { "user": request.authenticated_userid, "stackname": stack, "stack_id":stack_id,"archived":False, "deleted": False, "created":datetime.datetime.utcnow(),"updated":datetime.datetime.utcnow(),"deletedat":""})
+                db_stacks.stackdetails.update( { "user": request.authenticated_userid, "stackname": stack},{'$set':{"archived": False, "updated":datetime.datetime.utcnow()}})
+                stackdata= db_stacks.stackdetails.find( { "user": request.authenticated_userid, "stackname": stack})
+
+                stack_id= convert_uuid_to_urlsafe(stackdata[0]["stack_id"])
+                _publish_stack_event(request,stack_id,"stackdearchive")
+                db=get_db()
+                db.userstack.update({"user": request.authenticated_userid},{'$push':{"allstacks" : stack}})
+        return "success in on top Dearchive service"
+
+
+    elif "annotations" in value:
+        print (value["annotations"])
+        return "success in on top Dearchive service"
+    else:
+        return "Please provide an array of stacks or annotations to be dearchived."
+
+
+@api_config(route_name='api.ontop.delete',
+            request_method='POST',
+            effective_principals=security.Authenticated)
+def onTopDelete(request):
+    
+    return "success in on top delete service"
+
+
+######################StacksService##########################
+@api_config(route_name='api.stackservice.read',
+            request_method='GET',
+            effective_principals=security.Authenticated)
+def onStackServiceRead(request):
+    db_stacks = get_db_client().stackservice
+    toret = {}
+    toretstacklist = []
+    stackdata= db_stacks.stackdetails.find( { "user": request.authenticated_userid})
+    for item in stackdata:
+        toretstackwise={}
+        toretstackwise["name"]=item["stackname"]
+        toretstackwise["archived"] = item["archived"]
+        toretstacklist.append(toretstackwise)
+    toret["stacks"] = toretstacklist
+    toret["total"] = len(toretstacklist)         
+    return toret
+
+
+def create_uuid():
+    value= uuid.uuid4()
+    return value
+
+def convert_uuid_to_urlsafe(value):
+    encoded= base64.urlsafe_b64encode(value.bytes)[0:22]
+    return encoded
+
+def convert_urlsafe_to_uuid(urlsafe):
+    decoded = base64.urlsafe_b64decode(urlsafe+"==")
+    return  uuid.UUID(bytes=decoded)
+
 
 def includeme(config):
     config.scan(__name__)

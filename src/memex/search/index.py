@@ -61,6 +61,37 @@ def index(es, annotation, request):
         id=annotation_dict["id"],
     )
 
+def archiveindex(es, archivedannotation, request):
+    """
+    Index  archivedannotation into the search index.
+
+    A new annotation document will be created in the search index or,
+    if the index already contains an annotation document with the same ID as
+    the given annotation then it will be updated.
+
+    :param es: the Elasticsearch client object to use
+    :type es: memex.search.Client
+
+    :param annotation: the annotation to index
+    :type annotation: memex.models.Annotation
+
+    """
+    print "in archive index"
+    presenter = presenters.AnnotationSearchIndexPresenter(archivedannotation)
+    annotation_dict = presenter.asdict()
+
+    event = AnnotationTransformEvent(request, annotation_dict)
+    request.registry.notify(event)
+    print "in index function in memex"
+    print (os.getcwd())
+    es.conn.index(
+        index=es.index,
+        doc_type=es.t.archivedannotation,
+        body=annotation_dict,
+        id=annotation_dict["id"],
+    )
+
+
 def sharedindex(es, sharedannotation, request):
     """
     Index a sharedannotation into the search index.
@@ -142,10 +173,36 @@ def delete(es, annotation_id):
     :type annotation_id: str
 
     """
+    print "in delete function"
     try:
         es.conn.delete(
             index=es.index,
             doc_type=es.t.annotation,
+            id=annotation_id,
+        )
+    except elasticsearch.NotFoundError:
+        log.exception('Tried to delete a nonexistent annotation from the '
+                      'search index, annotation id: %s', annotation_id)
+def deletearchiveindex(es, annotation_id):
+    """
+    Delete an annotation from the search index.
+
+    If no annotation with the given annotation's ID exists in the search index,
+    just log the resulting elasticsearch exception (don't crash).
+
+    :param es: the Elasticsearch client object to use
+    :type es: memex.search.Client
+
+    :param annotation_id: the annotation id whose corresponding document to
+        delete from the search index
+    :type annotation_id: str
+
+    """
+    print "in delete function"
+    try:
+        es.conn.delete(
+            index=es.index,
+            doc_type=es.t.archivedannotation,
             id=annotation_id,
         )
     except elasticsearch.NotFoundError:
@@ -193,6 +250,23 @@ def reindex(session, es, request):
     deleting = BatchDeleter(session, es)
     deleting.delete_all()
 
+def stackarchive(session, es, stack_id,request):
+    print ("in stack archive")
+    val = storage.getannotations_in_stack(session,stack_id)
+    for item in val:
+        print item.id
+        delete(es,item.id)
+        archiveindex(es,item,request)
+        storage.mark_archived_annotation(session,item.id)
+
+def stackdearchive(session, es, stack_id,request):
+    print ("in stack archive")
+    val = storage.getannotations_in_stack(session,stack_id)
+    for item in val:
+        print item.id
+        deletearchiveindex(es,item.id)
+        index(es,item,request)
+        storage.mark_unarchived_annotation(session,item.id)
 
 class BatchIndexer(object):
     """
@@ -259,7 +333,7 @@ class BatchIndexer(object):
         # the database while still supporting eagerloading of associated
         # document data.
 
-        updated = self.session.query(models.Annotation.updated). \
+        updated = self.session.query(models.Annotation.updated).filter(models.Annotation.archived==False). \
                 execution_options(stream_results=True). \
                 order_by(models.Annotation.updated.desc()).all()
 

@@ -43,3 +43,7 @@ def includeme(config):
                      traverse='/{id}')
     config.add_route('api.stacks', '/stacks')
     config.add_route('api.stacksdelete', '/stacksdelete')
+    config.add_route('api.ontop.archive', '/ontop/archive')
+    config.add_route('api.ontop.dearchive', '/ontop/dearchive')
+    config.add_route('api.ontop.delete', '/ontop/delete')
+    config.add_route('api.stackservice.read', '/stackservice/read')

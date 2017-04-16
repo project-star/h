@@ -28,7 +28,6 @@ def includeme(config):
     settings = config.registry.settings
     settings.setdefault('es.host', 'http://localhost:9200')
     settings.setdefault('es.index', 'hypothesis')
-
     # Allow users of this module to register additional search filter and
     # search matcher factories.
     config.registry[FILTERS_KEY] = []

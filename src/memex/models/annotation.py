@@ -80,7 +80,10 @@ class Annotation(Base):
                        nullable=False,
                        default=False,
                        server_default=sa.sql.expression.false())
-
+    archived = sa.Column(sa.Boolean,
+                       nullable=False,
+                       default=False,
+                       server_default=sa.sql.expression.false())
     #: The URI of the annotated page, as provided by the client.
     _target_uri = sa.Column('target_uri', sa.UnicodeText)
     #: The URI of the annotated page in normalized form.

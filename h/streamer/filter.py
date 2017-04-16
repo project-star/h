@@ -22,6 +22,8 @@ SCHEMA = {
             "update": {"type": "boolean", "default":  True},
             "delete": {"type": "boolean", "default":  True},
             "shareddelete": {"type": "boolean", "default":  True},
+            "stackarchive": {"type": "boolean", "default":  True},
+            "stackdearchive": {"type": "boolean", "default":  True},
         },
         "clauses": {
             "type": "array",

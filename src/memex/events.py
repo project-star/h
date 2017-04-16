@@ -11,6 +11,17 @@ class AnnotationEvent(object):
         self.annotation_dict = annotation_dict
 
 
+
+class StackEvent(object):
+    """An event representing an action on an annotation."""
+
+    def __init__(self, request, stack_id, action, stack_dict=None):
+        self.request = request
+        self.stack_id = stack_id
+        self.action = action
+        self.stack_dict = stack_dict
+
+
 class AnnotationTransformEvent(object):
 
     """

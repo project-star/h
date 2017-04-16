@@ -284,6 +284,7 @@ ANNOTATION_ANALYSIS = {
 }
 
 SHAREDANNOTATION_ANALYSIS = {}
+ARCHIVEDANNOTATION_ANALYSIS = {}
 DOCUMENT_MAPPING = {
     '_id': {'path': 'id'},
     '_source': {'excludes': ['id']},
@@ -339,6 +340,11 @@ def configure_index(client, index=None):
                    client.t.sharedannotation,
                    SHAREDANNOTATION_MAPPING,
                    SHAREDANNOTATION_ANALYSIS)
+    _append_config(mappings,
+                   analysis,
+                   client.t.archivedannotation,
+                   ANNOTATION_MAPPING,
+                   ARCHIVEDANNOTATION_ANALYSIS)
     _append_config(mappings,
                    analysis,
                    client.t.document,
